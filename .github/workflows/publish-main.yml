@@ -1,0 +1,144 @@
+name: Publish main package
+
+
+on:
+  push:
+    tags:
+      - "v*"
+
+
+permissions:
+  contents: read
+  id-token: write
+
+
+
+jobs:
+
+
+  # BUILD JOB
+
+  build:
+
+    name: Build package
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+
+
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+
+
+
+      - name: Run tests
+        run: |
+          uv run pytest
+
+      - name: Check generated version
+        run: |
+          uv run python - <<EOF
+          import importlib.metadata
+
+          package = "qarai-agent-guard"
+
+          version = importlib.metadata.version(package)
+
+          print(f"Building version: {version}")
+          EOF
+
+
+
+
+      - name: Build package
+        run: |
+          uv build
+
+
+
+
+      - name: Check package
+        run: |
+          uv run twine check dist/*
+
+
+
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+
+
+
+
+  # PUBLISH JOB
+
+  publish:
+
+
+    name: Publish to PyPI
+
+
+    needs: build
+
+
+    runs-on: ubuntu-latest
+
+
+
+    environment:
+
+      name: pypi
+
+      url: https://pypi.org/p/qarai-agent-guard
+
+
+
+    permissions:
+
+      id-token: write
+
+
+
+    steps:
+
+
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+
+
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

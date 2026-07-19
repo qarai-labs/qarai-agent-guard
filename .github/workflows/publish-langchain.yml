@@ -1,0 +1,153 @@
+name: Publish LangChain integration package
+
+
+on:
+  push:
+    tags:
+      - "langchain-v*"
+
+
+
+permissions:
+  contents: read
+  id-token: write
+
+
+
+jobs:
+
+
+
+  # BUILD
+
+  build:
+
+
+    name: Build LangChain package
+
+
+    runs-on: ubuntu-latest
+
+
+
+    defaults:
+      run:
+        working-directory: integration/qarai-agent-guard-langchain
+
+
+
+    steps:
+
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+
+
+      - name: Run tests
+        run: |
+          uv run pytest
+
+
+
+      # Verify dynamic version
+      - name: Check generated version
+        run: |
+          uv run python - <<EOF
+          import importlib.metadata
+
+          package = "qarai-agent-guard-langchain"
+
+          version = importlib.metadata.version(package)
+
+          print(f"Building version: {version}")
+          EOF
+
+
+
+      - name: Build package
+        run: |
+          uv build
+
+
+
+      - name: Check package
+        run: |
+          uv run twine check dist/*
+
+
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qarai-agent-guard-langchain
+          path: integration/qarai-agent-guard-langchain/dist/
+
+
+
+
+
+
+  # PUBLISH
+
+  publish:
+
+
+    name: Publish LangChain package
+
+
+    needs: build
+
+
+    runs-on: ubuntu-latest
+
+
+
+    environment:
+
+      name: pypi
+
+      url: https://pypi.org/p/qarai-agent-guard-langchain
+
+
+
+    permissions:
+      id-token: write
+
+
+
+    steps:
+
+
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: qarai-agent-guard-langchain
+          path: dist/
+
+
+
+      # Publish
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

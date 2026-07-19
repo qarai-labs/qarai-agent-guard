@@ -1,0 +1,83 @@
+name: CI
+
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+
+
+permissions:
+  contents: read
+
+
+
+jobs:
+
+  test:
+
+    name: Test all packages
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+
+
+      # Main package
+
+      - name: Install main package dependencies
+        run: |
+          uv sync --frozen
+
+
+
+      - name: Test main package
+        run: |
+          uv run pytest
+
+      - name: Build main package
+        run: |
+          uv build
+
+
+
+      # LangChain integration package
+
+      - name: Install LangChain dependencies
+        working-directory: integration/qarai-agent-guard-langchain
+        run: |
+          uv sync --frozen
+
+
+      - name: Test LangChain package
+        working-directory: integration/qarai-agent-guard-langchain
+        run: |
+          uv run pytest
+
+      - name: Build LangChain package
+        working-directory: integration/qarai-agent-guard-langchain
+        run: |
+          uv build

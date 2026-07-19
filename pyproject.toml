@@ -1,0 +1,88 @@
+[project]
+name = "qarai-agent-guard"
+dynamic = ["version"]
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+pattern = "v(?P<base>\\d+\\.\\d+\\.\\d+)"
+
+description = "A lightweight toolkit for building secure AI systems with built-in middleware, protected memory, and AI safety models that mitigate prompt injection, jailbreaks, and adversarial attacks."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Oussama Ben Slama", email = "oussama@ben-slama.tn" },
+    { name = "Safouene Ziadi", email = "ziadisafouene@gmail.com" },
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Security",
+]
+
+keywords = [
+    "guardrails",
+    "ai-guardrails",
+    "ai-safety",
+    "llm",
+    "llm-safety",
+    "agents",
+    "ai-agents",
+    "prompt-injection",
+    "pii",
+    "data-privacy",
+    "nlp",
+    "arabic",
+    "arabic-nlp",
+    "ai-governance"
+]
+
+dependencies = [
+    "httpx>=0.27,<1.0",
+    "pydantic>=2.0,<3.0",
+    "pyyaml>=6.0,<7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/qarai-labs/qarai-agent-guard"
+Repository = "https://github.com/qarai-labs/qarai-agent-guard"
+Issues = "https://github.com/qarai-labs/qarai-agent-guard/issues"
+
+[build-system]
+requires = [
+    "setuptools>=68",
+    "uv-dynamic-versioning"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+qarai_agent_guard = [
+    "core/detectors/patterns/common/*.yaml",
+    "core/detectors/patterns/languages/*/*.yaml",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.5.0",
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.14",
+    "twine>=6.2.0",
+    "uv-dynamic-versioning>=0.14.0",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
