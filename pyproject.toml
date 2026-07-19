@@ -1,19 +1,18 @@
 [project]
 name = "qarai-agent-guard"
 dynamic = ["version"]
-[tool.uv-dynamic-versioning]
-vcs = "git"
-style = "pep440"
-pattern = "v(?P<base>\\d+\\.\\d+\\.\\d+)"
 
 description = "A lightweight toolkit for building secure AI systems with built-in middleware, protected memory, and AI safety models that mitigate prompt injection, jailbreaks, and adversarial attacks."
 readme = "README.md"
 license = { text = "Apache-2.0" }
+
 authors = [
     { name = "Oussama Ben Slama", email = "oussama@ben-slama.tn" },
     { name = "Safouene Ziadi", email = "ziadisafouene@gmail.com" },
 ]
+
 requires-python = ">=3.11"
+
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
@@ -36,7 +35,7 @@ keywords = [
     "nlp",
     "arabic",
     "arabic-nlp",
-    "ai-governance"
+    "ai-governance",
 ]
 
 dependencies = [
@@ -45,26 +44,38 @@ dependencies = [
     "pyyaml>=6.0,<7.0",
 ]
 
+
 [project.urls]
 Homepage = "https://github.com/qarai-labs/qarai-agent-guard"
 Repository = "https://github.com/qarai-labs/qarai-agent-guard"
 Issues = "https://github.com/qarai-labs/qarai-agent-guard/issues"
 
+
 [build-system]
 requires = [
     "setuptools>=68",
-    "uv-dynamic-versioning"
+    "uv-dynamic-versioning>=0.14.0",
 ]
 build-backend = "setuptools.build_meta"
 
+
+[tool.uv-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+pattern = "v(?P<base>\\d+\\.\\d+\\.\\d+)"
+
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
 
 [tool.setuptools.package-data]
 qarai_agent_guard = [
     "core/detectors/patterns/common/*.yaml",
     "core/detectors/patterns/languages/*/*.yaml",
 ]
+
 
 [dependency-groups]
 dev = [
@@ -76,13 +87,21 @@ dev = [
     "uv-dynamic-versioning>=0.14.0",
 ]
 
+
 [tool.ruff]
 line-length = 88
 
+
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
 
 [tool.pytest.ini_options]
 testpaths = [
-    "tests"
+    "tests",
 ]
