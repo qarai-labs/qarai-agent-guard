@@ -53,27 +53,34 @@ Issues = "https://github.com/qarai-labs/qarai-agent-guard/issues"
 
 [build-system]
 requires = [
-    "setuptools>=68",
-    "uv-dynamic-versioning>=0.14.0",
+    "hatchling",
+    "uv-dynamic-versioning",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
+
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
 
 
 [tool.uv-dynamic-versioning]
-enable = true
 vcs = "git"
 style = "pep440"
 pattern = "v(?P<base>\\d+\\.\\d+\\.\\d+)"
+fallback-version = "0.0.0"
 
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/qarai_agent_guard"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/qarai_agent_guard/core/detectors/patterns" = "qarai_agent_guard/core/detectors/patterns"
 
-[tool.setuptools.package-data]
-qarai_agent_guard = [
-    "core/detectors/patterns/common/*.yaml",
-    "core/detectors/patterns/languages/*/*.yaml",
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/qarai_agent_guard",
+    "README.md",
+    "LICENSE",
 ]
 
 
@@ -90,7 +97,6 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-
 
 [tool.ruff.lint]
 select = [

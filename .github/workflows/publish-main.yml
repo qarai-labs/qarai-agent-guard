@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
 
 
@@ -59,25 +60,22 @@ jobs:
         run: |
           uv run pytest
 
-      - name: Check generated version
-        run: |
-          uv run python - <<EOF
-          import importlib.metadata
-
-          package = "qarai-agent-guard"
-
-          version = importlib.metadata.version(package)
-
-          print(f"Building version: {version}")
-          EOF
-
-
 
 
       - name: Build package
         run: |
           uv build
 
+
+
+      - name: Check built metadata
+        run: |
+          echo "Wheel contents:"
+          ls dist/
+          WHL=$(ls dist/*.whl | head -n1)
+          echo "Inspecting $WHL"
+          python -m zipfile -e "$WHL" /tmp/wheel_extract > /dev/null
+          find /tmp/wheel_extract -name "METADATA" -exec cat {} \;
 
 
 
