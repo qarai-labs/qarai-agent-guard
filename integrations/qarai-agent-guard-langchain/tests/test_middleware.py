@@ -581,19 +581,24 @@ class TestSeverityHandling:
 
 
 class TestPolicyLoading:
-    def test_custom_policy_blocks_where_default_would_redact(self, tmp_path):
+    def test_custom_policy_blocks_where_default_also_blocks(self, tmp_path):
         detector = make_detector(
-            tmp_path, rule_id="probe", trigger="NUKE_LAUNCH_CODE", severity="critical"
+            tmp_path,
+            rule_id="probe",
+            trigger="NUKE_LAUNCH_CODE",
+            severity="critical",
         )
 
         default_guard = AgentGuard(detectors=[detector], policy=default_policy())
         default_middleware = AgentGuardMiddleware(default_guard)
-        default_result = default_middleware.after_model(
-            {"messages": [AIMessage(content="the NUKE_LAUNCH_CODE is 1234")]},
-            runtime=None,
-        )
-        assert default_result is not None
-        assert "NUKE_LAUNCH_CODE" not in default_result["messages"][0].content
+
+        with pytest.raises(AgentGuardViolation):
+            default_middleware.after_model(
+                {"messages": [AIMessage(content="the NUKE_LAUNCH_CODE is 1234")]},
+                runtime=None,
+            )
+
+        assert default_middleware.violation_count == 1
 
         policy = load_policy_yaml(tmp_path, "block.yaml", BLOCK_POLICY_YAML)
         strict_guard = AgentGuard(detectors=[detector], policy=policy)
@@ -604,6 +609,7 @@ class TestPolicyLoading:
                 {"messages": [AIMessage(content="the NUKE_LAUNCH_CODE is 1234")]},
                 runtime=None,
             )
+
         assert strict_middleware.violation_count == 1
 
     def test_custom_block_policy_stops_execution_at_every_entry_point(self, tmp_path):
