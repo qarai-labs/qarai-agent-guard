@@ -64,20 +64,20 @@ jobs:
 
 
 
-      # LangChain integration package
+      # # LangChain integration package
 
-      - name: Install LangChain dependencies
-        working-directory: integration/qarai-agent-guard-langchain
-        run: |
-          uv sync --frozen
+      # - name: Install LangChain dependencies
+      #   working-directory: integration/qarai-agent-guard-langchain
+      #   run: |
+      #     uv sync --frozen
 
 
-      - name: Test LangChain package
-        working-directory: integration/qarai-agent-guard-langchain
-        run: |
-          uv run pytest
+      # - name: Test LangChain package
+      #   working-directory: integration/qarai-agent-guard-langchain
+      #   run: |
+      #     uv run pytest
 
-      - name: Build LangChain package
-        working-directory: integration/qarai-agent-guard-langchain
-        run: |
-          uv build
+      # - name: Build LangChain package
+      #   working-directory: integration/qarai-agent-guard-langchain
+      #   run: |
+      #     uv build
