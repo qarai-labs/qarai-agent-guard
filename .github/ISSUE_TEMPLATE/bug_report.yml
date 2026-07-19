@@ -1,0 +1,113 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in qarai-agent-guard
+title: "[Bug]: "
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below as completely as possible.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Affected Package
+      description: Which package is this bug in?
+      options:
+        - qarai-agent-guard (core)
+        - qarai-agent-guard-langchain
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package Version
+      description: Output of `pip show qarai-agent-guard` (or the relevant package)
+      placeholder: "e.g. 0.1.2"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      placeholder: "e.g. 3.12.4"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: What happened? What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal code sample or steps that reproduce the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened, including full error messages/tracebacks if any.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs / Traceback
+      description: Paste any relevant logs or stack traces. This will be automatically formatted as code.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else relevant — related issues, workarounds you've tried, screenshots, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I've searched existing issues to make sure this isn't a duplicate
+          required: true
+        - label: I've included a minimal reproducible example
+          required: false
+        - label: I'm using the latest released version of the package
+          required: false

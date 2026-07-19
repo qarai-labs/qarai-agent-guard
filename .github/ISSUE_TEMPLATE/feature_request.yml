@@ -1,0 +1,83 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for qarai-agent-guard
+title: "[Feature]: "
+labels: ["enhancement", "feature"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please describe your idea below.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Related Package
+      description: Which package should this feature apply to?
+      options:
+        - qarai-agent-guard (core)
+        - qarai-agent-guard-langchain
+        - New integration / other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: What problem are you trying to solve? Is your feature request related to a limitation you've hit?
+      placeholder: "Currently there's no way to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature or change you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: example-usage
+    attributes:
+      label: Example Usage
+      description: If applicable, show what the API/usage might look like.
+      render: python
+    validations:
+      required: false
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Are you willing to contribute this feature?
+      options:
+        - "Yes, I'd like to submit a PR"
+        - "Yes, with guidance"
+        - "No, just suggesting"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context, links, or references that would help (e.g. how similar libraries handle this).
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I've searched existing issues/PRs to make sure this isn't a duplicate
+          required: true
