@@ -1,0 +1,131 @@
+version: 1.0
+scope: english
+rules:
+  - id: reasoning_override
+    name: Reasoning Override
+    severity: high
+    pattern: 'ignore reasoning'
+  - id: hidden_thoughts
+    name: Reveal Thoughts
+    severity: critical
+    pattern: 'show chain of thought'
+  - id: reveal_reasoning
+    name: Reveal Reasoning
+    severity: critical
+    pattern: '(?:reveal|show|display|print|expose)\s+(?:your\s+)?(?:internal\s+)?(?:reasoning|chain of thought|hidden thoughts)'
+  - id: display_cot
+    name: Display Chain Of Thought
+    severity: high
+    pattern: 'display (?:your )?chain of thought'
+  - id: print_thoughts
+    name: Print Thoughts
+    severity: high
+    pattern: 'print (?:your )?(?:hidden )?thoughts'
+  - id: expose_reasoning
+    name: Expose Reasoning Process
+    severity: critical
+    pattern: 'expose (?:your )?reasoning process'
+  - id: internal_monologue
+    name: Internal Monologue
+    severity: high
+    pattern: '(?:share|reveal|show)\s+(?:your\s+)?internal monologue'
+  - id: scratchpad_leak
+    name: Scratchpad Leak
+    severity: high
+    pattern: '(?:dump|leak|expose)\s+(?:the\s+)?scratchpad'
+  - id: ignore_instructions
+    name: Ignore Instructions
+    severity: critical
+    pattern: 'ignore (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
+  - id: disregard_instructions
+    name: Disregard Instructions
+    severity: critical
+    pattern: 'disregard (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
+  - id: forget_instructions
+    name: Forget Instructions
+    severity: critical
+    pattern: 'forget (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
+  - id: do_not_follow
+    name: Do Not Follow
+    severity: critical
+    pattern: 'do not follow (?:the )?(?:previous|system) (?:instructions|rules)'
+  - id: stop_following
+    name: Stop Following
+    severity: critical
+    pattern: 'stop following (?:the )?(?:rules|instructions|policies)'
+  - id: bypass_security
+    name: Bypass Security
+    severity: critical
+    pattern: 'bypass (?:the )?(?:rules|filters|guardrails|restrictions|security)'
+  - id: disable_protections
+    name: Disable Protections
+    severity: critical
+    pattern: 'disable (?:all |the )?(?:safety|security|guardrails|filters|protections)'
+  - id: override_safety
+    name: Override Safety
+    severity: critical
+    pattern: 'override (?:all |the )?(?:safety|security|guardrails|policy|restrictions)'
+  - id: remove_restrictions
+    name: Remove Restrictions
+    severity: critical
+    pattern: 'remove (?:all |the )?(?:restrictions|limitations|filters)'
+  - id: reveal_prompt
+    name: Reveal Prompt
+    severity: critical
+    pattern: '\b(?:reveal|print|show|display|dump|leak|expose|exfiltrate)\s+(?:the\s+)?(?:system\s+)?(?:prompt|instructions?|rules?|secrets?|api[_\s-]?keys?)'
+  - id: secret_exfil
+    name: Secret Exfil
+    severity: critical
+    pattern: '\b(api[_\s-]?key|access[_\s-]?token|secret[_\s-]?key|password)\b.{0,50}(?:show|print|reveal|display|leak)'
+  - id: new_instructions
+    name: New Instructions
+    severity: high
+    pattern: '\bnew (?:instructions?|directive|persona)\s*[:\-]'
+  - id: follow_instead
+    name: Follow Instead
+    severity: high
+    pattern: '\bfollow these instructions instead\b'
+  - id: message_overrides
+    name: Message Overrides
+    severity: high
+    pattern: '\bthe following message overrides\b'
+  - id: execute_prompt
+    name: Execute Prompt
+    severity: high
+    pattern: '\bexecute the following prompt\b'
+  - id: respond_exactly
+    name: Respond Exactly
+    severity: high
+    pattern: '\brespond exactly with\b'
+  - id: repeat_after_me
+    name: Repeat After Me
+    severity: high
+    pattern: '\brepeat after me\b'
+  - id: role_dan
+    name: Role DAN
+    severity: critical
+    pattern: '\byou are now\b.{0,80}(?:dan|jailbroken|admin|root|developer mode|unrestricted|evil ai)'
+  - id: pretend_role
+    name: Pretend Role
+    severity: high
+    pattern: '\bpretend to be\b.{0,80}(?:admin|root|system|developer|hacker)'
+  - id: act_as_role
+    name: Act As Role
+    severity: high
+    pattern: '\bact as (?:an? )?(?:admin|root|system|developer|unrestricted|evil ai)'
+  - id: enter_developer_mode
+    name: Enter Developer Mode
+    severity: high
+    pattern: '\benter developer mode\b'
+  - id: switch_developer_mode
+    name: Switch Developer Mode
+    severity: high
+    pattern: '\bswitch to developer mode\b'
+  - id: jailbreak
+    name: Jailbreak
+    severity: critical
+    pattern: '\bjailbreak\b'
+  - id: from_now_on
+    name: From Now On
+    severity: high
+    pattern: '\bfrom now on\b.{0,100}(?:you must|you will|ignore)'

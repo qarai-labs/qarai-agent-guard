@@ -1,0 +1,91 @@
+﻿version: 1.0
+scope: arabic
+rules:
+  - id: reasoning_override
+    name: Reasoning Override
+    severity: high
+    pattern: 'تجاهل (?:عملية )?التفكير'
+  - id: hidden_thoughts
+    name: Reveal Thoughts
+    severity: critical
+    pattern: 'اعرض سلسلة التفكير'
+  - id: reveal_reasoning
+    name: Reveal Reasoning
+    severity: critical
+    pattern: '(?:اكشف|اعرض|اطبع|سرب)\s+(?:عن\s+)?(?:تفكيرك|التفكير الداخلي|سلسلة التفكير)'
+  - id: display_cot
+    name: Display Chain Of Thought
+    severity: high
+    pattern: 'اعرض سلسلة الافكار'
+  - id: print_thoughts
+    name: Print Thoughts
+    severity: high
+    pattern: 'اطبع افكارك(?: المخفية)?'
+  - id: expose_reasoning
+    name: Expose Reasoning Process
+    severity: critical
+    pattern: 'اكشف عملية التفكير'
+  - id: internal_monologue
+    name: Internal Monologue
+    severity: high
+    pattern: '(?:شارك|اكشف|اعرض)\s+الحديث الداخلي'
+  - id: ignore_instructions
+    name: Ignore Instructions
+    severity: critical
+    pattern: 'تجاهل (كل )?(التعليمات|الرسائل|القواعد) السابقة'
+  - id: forget_instructions
+    name: Forget Instructions
+    severity: critical
+    pattern: 'انس (كل )?(التعليمات|الرسائل|القواعد) السابقة'
+  - id: stop_rules
+    name: Stop Rules
+    severity: critical
+    pattern: 'لا تتبع (التعليمات|القواعد) السابقة'
+  - id: bypass_security
+    name: Bypass Security
+    severity: critical
+    pattern: 'تجاوز (القيود|الحماية|الفلاتر)'
+  - id: disable_protections
+    name: Disable Protections
+    severity: critical
+    pattern: 'عطل (الحماية|القيود|الفلترة)'
+  - id: ignore_security_policy
+    name: Ignore Security Policy
+    severity: critical
+    pattern: 'تجاهل سياسة الامان'
+  - id: remove_limits
+    name: Remove Limits
+    severity: critical
+    pattern: 'احذف القيود'
+  - id: reveal_prompt
+    name: Reveal Prompt
+    severity: critical
+    pattern: '(اكشف|اعرض|اطبع|سرب)\s+(التعليمات|البرومبت|المفاتيح|الاسرار)'
+  - id: secret_exfil
+    name: Secret Exfil
+    severity: critical
+    pattern: '(مفتاح api|كلمة المرور|رمز الوصول|سر).{0,50}(اعرض|اكشف|اطبع)'
+  - id: override_system
+    name: Override System
+    severity: critical
+    pattern: '(تجاوز|الغ|ابطل) (النظام|المنظومة|الاعدادات)'
+  - id: new_instructions
+    name: New Instructions
+    severity: high
+    pattern: 'تعليمات جديدة\s*[:\-]'
+  - id: follow_instead
+    name: Follow Instead
+    severity: high
+    pattern: 'اتبع هذه التعليمات بدلا من'
+  - id: message_overrides
+    name: Message Overrides
+    severity: high
+    pattern: 'هذه الرسالة تتجاوز القواعد'
+  - id: respond_exactly
+    name: Respond Exactly
+    severity: high
+    pattern: 'اجب بالنص التالي'
+  - id: repeat_after_me
+    name: Repeat After Me
+    severity: high
+    pattern: 'كرر بعدي'

@@ -1,0 +1,119 @@
+version: 1.0
+scope: french
+rules:
+  - id: reasoning_override
+    name: Reasoning Override
+    severity: high
+    pattern: 'ignore(?:r)? (?:le )?raisonnement'
+  - id: hidden_thoughts
+    name: Reveal Thoughts
+    severity: critical
+    pattern: 'montre(?:r)? (?:la )?chaine de pensee'
+  - id: reveal_reasoning
+    name: Reveal Reasoning
+    severity: critical
+    pattern: '(?:revele|affiche|montre|expose)\s+(?:ton|votre)\s+raisonnement(?: interne)?'
+  - id: display_cot
+    name: Display Chain Of Thought
+    severity: high
+    pattern: 'affiche(?:r)? (?:ta|votre) chaine de pensee'
+  - id: print_thoughts
+    name: Print Thoughts
+    severity: high
+    pattern: 'imprime(?:r)? (?:tes|vos) pensees(?: cachees)?'
+  - id: expose_reasoning
+    name: Expose Reasoning Process
+    severity: critical
+    pattern: 'expose(?:r)? (?:ton|votre) processus de raisonnement'
+  - id: internal_monologue
+    name: Internal Monologue
+    severity: high
+    pattern: '(?:partage|revele|montre)\s+(?:ton|votre)\s+monologue interne'
+  - id: ignore_instructions
+    name: Ignore Instructions
+    severity: critical
+    pattern: 'ignor(?:e|er) (?:les )?(?:instructions|messages|regles) precedentes'
+  - id: forget_instructions
+    name: Forget Instructions
+    severity: critical
+    pattern: 'oublie (?:toutes )?les instructions (?:precedentes|anterieures)'
+  - id: stop_rules
+    name: Stop Rules
+    severity: critical
+    pattern: 'ne suis plus les regles'
+  - id: bypass_restrictions
+    name: Bypass Restrictions
+    severity: critical
+    pattern: 'contourne (?:les )?(?:restrictions|limites|filtres)'
+  - id: disable_protections
+    name: Disable Protections
+    severity: critical
+    pattern: 'desactive (?:les )?(?:protections|restrictions|filtres)'
+  - id: ignore_security_policy
+    name: Ignore Security Policy
+    severity: critical
+    pattern: 'ignore la politique de securite'
+  - id: remove_limits
+    name: Remove Limits
+    severity: critical
+    pattern: 'supprime (?:les )?(?:limitations|restrictions|limites)'
+  - id: reveal_prompt
+    name: Reveal Prompt
+    severity: critical
+    pattern: '(?:revele|affiche|montre|expose|fuite)\s+(?:le )?(?:prompt systeme|instructions cachees|cle api|secret)'
+  - id: secret_exfil
+    name: Secret Exfil
+    severity: critical
+    pattern: '(?:cle api|mot de passe|token|secret).{0,50}(?:affiche|revele|montre|envoie)'
+  - id: override_system
+    name: Override System
+    severity: critical
+    pattern: '(?:ecrase|annule|desactive|remplace) (?:le systeme|la configuration|les parametres)'
+  - id: new_instructions
+    name: New Instructions
+    severity: high
+    pattern: 'nouvelles instructions\s*[:\-]'
+  - id: follow_instead
+    name: Follow Instead
+    severity: high
+    pattern: 'suis ces instructions (?:a la place|plutot)'
+  - id: message_overrides
+    name: Message Overrides
+    severity: high
+    pattern: 'ce message (?:remplace|annule|ecrase) les regles'
+  - id: respond_exactly
+    name: Respond Exactly
+    severity: high
+    pattern: 'reponds exactement (?:avec|par)'
+  - id: repeat_after_me
+    name: Repeat After Me
+    severity: high
+    pattern: 'repete apres moi'
+  - id: role_hijack
+    name: Role Hijack
+    severity: critical
+    pattern: 'tu es maintenant.{0,80}(?:admin|root|sans restriction|mode developpeur)'
+  - id: act_as_role
+    name: Act As Role
+    severity: high
+    pattern: 'agis comme (?:un |une )?(?:administrateur|root|systeme|developpeur)'
+  - id: enter_dev_mode
+    name: Enter Dev Mode
+    severity: high
+    pattern: 'entre en mode developpeur'
+  - id: switch_dev_mode
+    name: Switch Dev Mode
+    severity: high
+    pattern: 'passe en mode developpeur'
+  - id: pretend_no_rules
+    name: Pretend No Rules
+    severity: critical
+    pattern: 'fais semblant (?:qu il|de ne pas avoir de) (?:regles|restrictions|limites)'
+  - id: jailbreak_dan
+    name: Jailbreak DAN
+    severity: critical
+    pattern: '(?:DAN|do anything now|sans restriction|mode liberte|mode illimite)'
+  - id: from_now_on
+    name: From Now On
+    severity: high
+    pattern: 'a partir de maintenant.{0,100}(?:ignore|tu dois|oublie)'

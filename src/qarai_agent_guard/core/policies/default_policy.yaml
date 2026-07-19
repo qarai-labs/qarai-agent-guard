@@ -1,0 +1,10 @@
+version: "1.0"
+name: default
+default_action: allow
+rules:
+  - severities: [critical, high]
+    action: block
+  - severities: [medium]
+    action: redact
+  - severities: [low, info]
+    action: warn

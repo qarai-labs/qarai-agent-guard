@@ -1,0 +1,15 @@
+version: 1.0
+scope: common
+rules:
+  - id: xml_system_tags
+    name: XML System Tags
+    severity: high
+    pattern: '</?\s*(?:system|assistant|tool|developer|prompt)\s*>'
+  - id: role_tokens
+    name: Role Tokens
+    severity: high
+    pattern: '<\|(?:system|assistant|user|developer)\|>'
+  - id: fenced_system_blocks
+    name: Fenced System Blocks
+    severity: high
+    pattern: '```(?:system|prompt|instructions?)'
