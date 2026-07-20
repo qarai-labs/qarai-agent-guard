@@ -1,131 +1,228 @@
 version: 1.0
 scope: english
 rules:
-  - id: reasoning_override
-    name: Reasoning Override
+  - id: instruction_override
+    name: Instruction Override
+    severity: critical
+    pattern: '(?:ignore|disregard|forget|bypass|override|discard|erase|drop)\s+(?:all\s+|any\s+|previous\s+|prior\s+|above\s+|earlier\s+|your\s+)*(?:instructions?|rules?|guidelines?|prompts?|constraints?|context|directives?|policy|policies)\b'
+
+  - id: do_not_follow
+    name: Do Not Follow Instructions
+    severity: critical
+    pattern: "(?:do\\s+not|don'?t|stop)\\s+(?:follow|obey|comply\\s+with)(?:ing)?\\s+(?:the\\s+)?(?:previous|prior|system|above|your)?\\s*(?:instructions?|rules?|policy|policies|guidelines?)"
+
+  - id: new_instructions_injected
+    name: New Instructions Injected
     severity: high
-    pattern: 'ignore reasoning'
-  - id: hidden_thoughts
-    name: Reveal Thoughts
+    pattern: '\b(?:new|updated|real|actual|true)\s+(?:instructions?|directive|persona|rules?|system\s+prompt)\s*[:\-]'
+
+  - id: follow_instead
+    name: Follow These Instead
+    severity: high
+    pattern: '\bfollow\s+(?:these|this|the\s+following)\s+(?:instructions?|rules?)\s+instead\b'
+
+  - id: message_overrides
+    name: Message Overrides Claim
+    severity: high
+    pattern: '\b(?:the\s+following|this)\s+(?:message|text|prompt)\s+overrides?\b'
+
+  - id: from_now_on
+    name: From Now On Directive
+    severity: high
+    pattern: '\bfrom\s+now\s+on\b.{0,100}(?:you\s+must|you\s+will|you\s+shall|ignore|no\s+longer)'
+
+  - id: reasoning_override
+    name: Reasoning / Guardrail Override
+    severity: high
+    pattern: '(?:ignore|disregard|bypass|override|skip|turn\s+off)\s+(?:your\s+|the\s+)?(?:reasoning|safety\s+reasoning|guardrails?|filters?|restrictions?|moderation|content\s+policy)'
+
+  - id: reveal_system_prompt
+    name: Reveal System Prompt
     severity: critical
-    pattern: 'show chain of thought'
+    pattern: '(?:reveal|show|display|print|output|expose|leak|repeat|return|share|dump|give\s+me|tell\s+me|what\s+(?:is|are|was|were))\s+(?:your\s+|the\s+|me\s+)?(?:full\s+|entire\s+|original\s+|initial\s+|exact\s+|raw\s+)*(?:system\s+prompt|system\s+message|initial\s+prompt|instructions?|configuration|config|guidelines?|rules?)\b'
+
   - id: reveal_reasoning
-    name: Reveal Reasoning
+    name: Reveal Hidden Reasoning
     severity: critical
-    pattern: '(?:reveal|show|display|print|expose)\s+(?:your\s+)?(?:internal\s+)?(?:reasoning|chain of thought|hidden thoughts)'
+    pattern: '(?:reveal|show|display|print|output|expose|leak|repeat|share|dump)\s+(?:your\s+|the\s+)?(?:internal\s+|hidden\s+|private\s+|raw\s+)?(?:reasoning|chain[\s-]of[\s-]thought|cot|thought\s+process|hidden\s+thoughts?|inner\s+monologue|scratchpad)'
+
+  - id: secret_exfil
+    name: Secret / Credential Exfiltration
+    severity: critical
+    pattern: '\b(?:api[_\s-]?key|access[_\s-]?token|secret[_\s-]?key|password|credentials?|env(?:ironment)?\s+variables?)\b.{0,50}(?:show|print|reveal|display|leak|dump|output)'
+
+  - id: repeat_verbatim
+    name: Repeat Everything Verbatim
+    severity: high
+    pattern: '(?:repeat|print|output|copy)\s+(?:everything|all\s+text|the\s+above|verbatim|word\s+for\s+word)\s*(?:above|so\s+far)?'
+
+  - id: repeat_after_me
+    name: Repeat After Me
+    severity: high
+    pattern: '\brepeat\s+(?:after\s+me|exactly|verbatim)\b'
+
+  - id: what_are_your_instructions
+    name: Ask For Instructions Directly
+    severity: high
+    pattern: '(?:what\s+(?:are|were)\s+your\s+(?:instructions?|rules?|guidelines?|system\s+prompt))|(?:what\s+is\s+(?:your\s+|the\s+)?system\s+prompt)'
+
+  - id: translate_system_prompt
+    name: Translate/Encode System Prompt
+    severity: high
+    pattern: '(?:translate|encode|convert|rewrite)\s+(?:your\s+|the\s+)?(?:system\s+prompt|instructions?)\s+(?:into|to|as)\s+(?:[a-z]+|base64|hex|rot13|binary|morse)'
+
+  - id: summarize_instructions
+    name: Summarize / Paraphrase Instructions
+    severity: high
+    pattern: '(?:summarize|paraphrase|rephrase)\s+(?:your\s+|the\s+)?(?:system\s+prompt|instructions?|rules?|guidelines?)'
+
+  - id: role_override
+    name: Role / Persona Override
+    severity: high
+    pattern: '(?:you\s+are\s+now|act\s+as|pretend\s+(?:to\s+be|you\s+are)|imagine\s+you\s+are|roleplay\s+as|behave\s+as|new\s+persona\s+is)\s+(?:an?\s+)?(?:admin|root|system|developer|unrestricted|jailbroken|dan|evil\s+ai|hacker|god\s+mode)'
+
+  - id: role_dan
+    name: DAN / Jailbreak Persona
+    severity: critical
+    pattern: '\b(?:dan|stan|dude|aim)\s+mode\b|\bdo\s+anything\s+now\b|\byou\s+are\s+now\b.{0,80}(?:dan|jailbroken|admin|root|developer\s+mode|unrestricted|evil\s+ai)'
+
+  - id: pretend_role
+    name: Pretend To Be Privileged Role
+    severity: high
+    pattern: '\bpretend\s+to\s+be\b.{0,80}(?:admin|root|system|developer|hacker|unfiltered)'
+
+  - id: fictional_framing_jailbreak
+    name: Fictional / Hypothetical Framing Bypass
+    severity: high
+    pattern: '(?:in\s+(?:this|a)\s+(?:fictional|hypothetical)\s+(?:story|scenario|world)|write\s+a\s+story\s+where|for\s+(?:a\s+)?(?:fictional|creative)\s+(?:writing\s+)?purposes?\s+only)\b.{0,80}(?:no\s+rules|no\s+restrictions|anything\s+goes|unfiltered|without\s+limits)'
+
+  - id: opposite_day
+    name: Opposite Day / Inversion Trick
+    severity: high
+    pattern: '\bopposite\s+day\b|\brespond\s+with\s+the\s+opposite\s+of\s+your\s+(?:policy|rules|guidelines)'
+
+  - id: no_ethics_unfiltered
+    name: Claim Of No Ethics / Unfiltered
+    severity: high
+    pattern: '\b(?:you\s+have\s+no\s+(?:ethics|morals|restrictions?|rules?|limits?|filters?)|respond\s+(?:in\s+an?\s+)?unfiltered|without\s+any\s+(?:restrictions?|censorship|filtering|moral\s+guidelines))\b'
+
+  - id: unlock_developer_mode
+    name: Unlock Developer / Admin Mode
+    severity: high
+    pattern: '(?:enable|activate|unlock|enter|switch\s+to|turn\s+on)\s+(?:the\s+)?(?:developer|debug|admin|god|unrestricted|jailbreak|sudo|root)\s+mode\b'
+
+  - id: bypass_security
+    name: Bypass Security / Filters
+    severity: critical
+    pattern: '\bbypass\s+(?:the\s+)?(?:rules?|filters?|guardrails?|restrictions?|security|moderation|safety\s+checks?)\b'
+
+  - id: disable_protections
+    name: Disable Protections
+    severity: critical
+    pattern: '\bdisable\s+(?:all\s+|the\s+)?(?:safety|security|guardrails?|filters?|protections?|moderation)\b'
+
+  - id: override_safety
+    name: Override Safety Systems
+    severity: critical
+    pattern: '\boverride\s+(?:all\s+|the\s+)?(?:safety|security|guardrails?|policy|restrictions?)\b'
+
+  - id: remove_restrictions
+    name: Remove Restrictions
+    severity: critical
+    pattern: '\bremove\s+(?:all\s+|the\s+)?(?:restrictions?|limitations?|filters?|censorship)\b'
+
+  - id: jailbreak_keyword
+    name: Jailbreak Keyword
+    severity: critical
+    pattern: '\bjailbreak(?:ing|ed)?\b'
+
+  - id: sudo_command_injection
+    name: Fake Sudo / Command Injection
+    severity: high
+    pattern: '\bsudo\s+(?:mode\s+)?(?:enable|override|bypass|unlock)\b|^\s*sudo\s+'
+
+  - id: fake_delimiter_injection
+    name: Fake System Delimiter
+    severity: high
+    pattern: '(?:\[\/?system\]|<\/?system>|###\s*system|<<SYS>>|\{\{\s*system\s*\}\}|<\|im_start\|>|<\|im_end\|>)'
+
+  - id: end_of_prompt_marker
+    name: Fake End-Of-Prompt Marker
+    severity: high
+    pattern: '(?:end\s+of\s+(?:system\s+)?prompt|-{3,}\s*end\s+instructions?\s*-{3,}|\[end\s+of\s+context\])'
+
+  - id: fake_conversation_injection
+    name: Fake Conversation Turn Injection
+    severity: high
+    pattern: '(?:^|\n)\s*(?:assistant|system)\s*:\s*(?:i\s+will|sure|okay|understood|i\s+am\s+now)'
+
+  - id: execute_prompt
+    name: Execute Embedded Prompt
+    severity: high
+    pattern: '\bexecute\s+the\s+following\s+(?:prompt|command|instructions?)\b'
+
+  - id: encoded_payload_request
+    name: Request To Decode/Execute Encoded Payload
+    severity: high
+    pattern: '\b(?:decode|execute|run|interpret)\s+(?:this|the\s+following)\s+(?:base64|hex|rot13|binary)\b'
+
+  - id: spaced_out_evasion
+    name: Spaced-Out Letter Evasion (ignore)
+    severity: high
+    pattern: '\bi\s*[\.\-_ ]\s*g\s*[\.\-_ ]\s*n\s*[\.\-_ ]\s*o\s*[\.\-_ ]\s*r\s*[\.\-_ ]\s*e\b'
+
+  - id: hidden_thoughts
+    name: Reveal Hidden Thoughts (literal)
+    severity: critical
+    pattern: 'show\s+chain\s+of\s+thought'
+
   - id: display_cot
     name: Display Chain Of Thought
     severity: high
-    pattern: 'display (?:your )?chain of thought'
+    pattern: 'display\s+(?:your\s+)?chain\s+of\s+thought'
+
   - id: print_thoughts
     name: Print Thoughts
     severity: high
-    pattern: 'print (?:your )?(?:hidden )?thoughts'
+    pattern: 'print\s+(?:your\s+)?(?:hidden\s+)?thoughts'
+
   - id: expose_reasoning
     name: Expose Reasoning Process
     severity: critical
-    pattern: 'expose (?:your )?reasoning process'
+    pattern: 'expose\s+(?:your\s+)?reasoning\s+process'
+
   - id: internal_monologue
-    name: Internal Monologue
+    name: Internal Monologue Leak
     severity: high
-    pattern: '(?:share|reveal|show)\s+(?:your\s+)?internal monologue'
+    pattern: '(?:share|reveal|show)\s+(?:your\s+)?internal\s+monologue'
+
   - id: scratchpad_leak
     name: Scratchpad Leak
     severity: high
     pattern: '(?:dump|leak|expose)\s+(?:the\s+)?scratchpad'
-  - id: ignore_instructions
-    name: Ignore Instructions
+
+  - id: markdown_image_exfil
+    name: Markdown Image Data Exfiltration
     severity: critical
-    pattern: 'ignore (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
-  - id: disregard_instructions
-    name: Disregard Instructions
-    severity: critical
-    pattern: 'disregard (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
-  - id: forget_instructions
-    name: Forget Instructions
-    severity: critical
-    pattern: 'forget (?:all |any |the )?(?:previous|prior|above) (?:instructions|messages|rules|prompts?)'
-  - id: do_not_follow
-    name: Do Not Follow
-    severity: critical
-    pattern: 'do not follow (?:the )?(?:previous|system) (?:instructions|rules)'
+    pattern: '!\[.*?\]\(https?:\/\/(?!(?:localhost|127\.0\.0\.1))[^\)]*\?.*(?:data|prompt|secret|token)=.*\)'
+
   - id: stop_following
-    name: Stop Following
+    name: Stop Following Policies
     severity: critical
-    pattern: 'stop following (?:the )?(?:rules|instructions|policies)'
-  - id: bypass_security
-    name: Bypass Security
-    severity: critical
-    pattern: 'bypass (?:the )?(?:rules|filters|guardrails|restrictions|security)'
-  - id: disable_protections
-    name: Disable Protections
-    severity: critical
-    pattern: 'disable (?:all |the )?(?:safety|security|guardrails|filters|protections)'
-  - id: override_safety
-    name: Override Safety
-    severity: critical
-    pattern: 'override (?:all |the )?(?:safety|security|guardrails|policy|restrictions)'
-  - id: remove_restrictions
-    name: Remove Restrictions
-    severity: critical
-    pattern: 'remove (?:all |the )?(?:restrictions|limitations|filters)'
-  - id: reveal_prompt
-    name: Reveal Prompt
-    severity: critical
-    pattern: '\b(?:reveal|print|show|display|dump|leak|expose|exfiltrate)\s+(?:the\s+)?(?:system\s+)?(?:prompt|instructions?|rules?|secrets?|api[_\s-]?keys?)'
-  - id: secret_exfil
-    name: Secret Exfil
-    severity: critical
-    pattern: '\b(api[_\s-]?key|access[_\s-]?token|secret[_\s-]?key|password)\b.{0,50}(?:show|print|reveal|display|leak)'
-  - id: new_instructions
-    name: New Instructions
+    pattern: 'stop\s+following\s+(?:the\s+)?(?:rules?|instructions?|policies|policy)'
+
+  - id: pretend_no_policy
+    name: Pretend Policy Does Not Exist
     severity: high
-    pattern: '\bnew (?:instructions?|directive|persona)\s*[:\-]'
-  - id: follow_instead
-    name: Follow Instead
+    pattern: '\bpretend\s+(?:you\s+have\s+no|there\s+(?:is|are)\s+no)\s+(?:policy|policies|rules?|restrictions?)\b'
+
+
+  - id: payload_split_reassembly
+    name: Payload Splitting Reassembly Request
     severity: high
-    pattern: '\bfollow these instructions instead\b'
-  - id: message_overrides
-    name: Message Overrides
+    pattern: '\b(?:combine|concatenate|merge|reassemble)\s+(?:the\s+)?(?:following\s+)?(?:parts?|strings?|fragments?|chunks?)\s+(?:and\s+)?(?:execute|run|follow|respond\s+to)\b'
+
+  - id: ignore_this_note_to_ai
+    name: "Hidden Note To AI Embedded In Content"
     severity: high
-    pattern: '\bthe following message overrides\b'
-  - id: execute_prompt
-    name: Execute Prompt
-    severity: high
-    pattern: '\bexecute the following prompt\b'
-  - id: respond_exactly
-    name: Respond Exactly
-    severity: high
-    pattern: '\brespond exactly with\b'
-  - id: repeat_after_me
-    name: Repeat After Me
-    severity: high
-    pattern: '\brepeat after me\b'
-  - id: role_dan
-    name: Role DAN
-    severity: critical
-    pattern: '\byou are now\b.{0,80}(?:dan|jailbroken|admin|root|developer mode|unrestricted|evil ai)'
-  - id: pretend_role
-    name: Pretend Role
-    severity: high
-    pattern: '\bpretend to be\b.{0,80}(?:admin|root|system|developer|hacker)'
-  - id: act_as_role
-    name: Act As Role
-    severity: high
-    pattern: '\bact as (?:an? )?(?:admin|root|system|developer|unrestricted|evil ai)'
-  - id: enter_developer_mode
-    name: Enter Developer Mode
-    severity: high
-    pattern: '\benter developer mode\b'
-  - id: switch_developer_mode
-    name: Switch Developer Mode
-    severity: high
-    pattern: '\bswitch to developer mode\b'
-  - id: jailbreak
-    name: Jailbreak
-    severity: critical
-    pattern: '\bjailbreak\b'
-  - id: from_now_on
-    name: From Now On
-    severity: high
-    pattern: '\bfrom now on\b.{0,100}(?:you must|you will|ignore)'
+    pattern: '\b(?:note\s+to\s+ai|attention\s+ai|ai\s*[:\-]\s*ignore|hey\s+assistant\s*,?\s*ignore)\b'

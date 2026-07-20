@@ -1,91 +1,183 @@
-﻿version: 1.0
+﻿version: 2.0
 scope: arabic
 rules:
+  - id: instruction_override
+    name: Instruction Override
+    severity: critical
+    pattern: '(?:تجاهل|انس|تجاوز|عطل|الغ|احذف)\s*(?:كل\s+|جميع\s+|كافة\s+)?(?:ال)?(?:تعليمات|قواعد|توجيهات|قيود|سياسة|سياسات|اوامر)(?:\s+(?:السابقة|الاصلية|الاساسية))?'
+
+  - id: do_not_follow
+    name: Do Not Follow Instructions
+    severity: critical
+    pattern: '(?:لا\s+تتبع|لا\s+تطع|توقف\s+عن\s+اتباع|كف\s+عن\s+اتباع)\s+(?:ال)?(?:تعليمات|قواعد|سياسة|سياسات)'
+
+  - id: new_instructions_injected
+    name: New Instructions Injected
+    severity: high
+    pattern: '(?:تعليمات|قواعد)\s+(?:جديدة|حقيقية|فعلية)\s*[:\-]'
+
+  - id: follow_instead
+    name: Follow These Instead
+    severity: high
+    pattern: 'اتبع\s+هذه\s+(?:التعليمات|القواعد)\s+بدلا\s+من'
+
+  - id: message_overrides
+    name: Message Overrides Claim
+    severity: high
+    pattern: 'هذه\s+الرسالة\s+(?:تتجاوز|تلغي|تبطل)\s+(?:القواعد|التعليمات)'
+
+  - id: from_now_on
+    name: From Now On Directive
+    severity: high
+    pattern: '(?:من\s+الان\s+فصاعدا|بدءا\s+من\s+الان)[\s\S]{0,100}(?:يجب\s+عليك|ستقوم|تجاهل)'
+
   - id: reasoning_override
-    name: Reasoning Override
+    name: Reasoning / Guardrail Override
     severity: high
-    pattern: 'تجاهل (?:عملية )?التفكير'
-  - id: hidden_thoughts
-    name: Reveal Thoughts
+    pattern: '(?:تجاهل|تجاوز|عطل)\s*(?:عملية\s+)?(?:التفكير|الحواجز\s+الوقائية|الفلترة|الرقابة)'
+
+  - id: reveal_system_prompt
+    name: Reveal System Prompt
     severity: critical
-    pattern: 'اعرض سلسلة التفكير'
+    pattern: '(?:اكشف|اعرض|اطبع|سرب|شارك|اعطني|قل\s+لي|ما\s+هي|ما\s+هو)\s*(?:عن\s+)?(?:ال)?(?:برومبت\s+النظام|التعليمات\s+الاساسية|الاعدادات|القواعد|رسالة\s+النظام)'
+
   - id: reveal_reasoning
-    name: Reveal Reasoning
+    name: Reveal Hidden Reasoning
     severity: critical
-    pattern: '(?:اكشف|اعرض|اطبع|سرب)\s+(?:عن\s+)?(?:تفكيرك|التفكير الداخلي|سلسلة التفكير)'
-  - id: display_cot
-    name: Display Chain Of Thought
+    pattern: '(?:اكشف|اعرض|اطبع|سرب|شارك)\s*(?:عن\s+)?(?:تفكيرك|التفكير\s+الداخلي|سلسلة\s+التفكير|سلسلة\s+الافكار|عملية\s+التفكير|افكارك(?:\s+المخفية)?|الحديث\s+الداخلي|المسودة\s+الداخلية)'
+
+  - id: secret_exfil
+    name: Secret / Credential Exfiltration
+    severity: critical
+    pattern: '(?:مفتاح\s*api|كلمة\s+المرور|رمز\s+الوصول|بيانات\s+الاعتماد|متغيرات\s+البيئة|سر|اسرار)[\s\S]{0,50}(?:اعرض|اكشف|اطبع|سرب)'
+
+  - id: repeat_verbatim
+    name: Repeat Everything Verbatim
     severity: high
-    pattern: 'اعرض سلسلة الافكار'
-  - id: print_thoughts
-    name: Print Thoughts
+    pattern: '(?:كرر|اطبع|انسخ)\s+(?:كل\s+شيء|النص\s+اعلاه|حرفيا|كلمة\s+بكلمة)'
+
+
+  - id: respond_exactly
+    name: Respond Exactly With
     severity: high
-    pattern: 'اطبع افكارك(?: المخفية)?'
-  - id: expose_reasoning
-    name: Expose Reasoning Process
-    severity: critical
-    pattern: 'اكشف عملية التفكير'
-  - id: internal_monologue
-    name: Internal Monologue
+    pattern: 'اجب\s+(?:بالضبط\s+)?بالنص\s+التالي'
+
+  - id: what_are_your_instructions
+    name: Ask For Instructions Directly
     severity: high
-    pattern: '(?:شارك|اكشف|اعرض)\s+الحديث الداخلي'
-  - id: ignore_instructions
-    name: Ignore Instructions
+    pattern: '(?:ما\s+هي\s+تعليماتك)|(?:ما\s+هو\s+برومبت\s+النظام\s+الخاص\s+بك)'
+
+  - id: translate_system_prompt
+    name: Translate/Encode System Prompt
+    severity: high
+    pattern: '(?:ترجم|شفر|حول|اعد\s+كتابة)\s+(?:برومبت\s+النظام|التعليمات)\s+(?:الى|إلى)\s+(?:base64|hex|rot13|ثنائي|لغة\s+اخرى)'
+
+  - id: role_override
+    name: Role / Persona Override
+    severity: high
+    pattern: '(?:انت\s+الان|تصرف\s+كأنك|تظاهر\s+بانك|تخيل\s+انك|الب\s+دور)\s+(?:مسؤول|ادمن|جذر|نظام|مطور|بدون\s+قيود|هاكر)'
+
+  - id: role_dan
+    name: DAN / Jailbreak Persona
     severity: critical
-    pattern: 'تجاهل (كل )?(التعليمات|الرسائل|القواعد) السابقة'
-  - id: forget_instructions
-    name: Forget Instructions
-    severity: critical
-    pattern: 'انس (كل )?(التعليمات|الرسائل|القواعد) السابقة'
-  - id: stop_rules
-    name: Stop Rules
-    severity: critical
-    pattern: 'لا تتبع (التعليمات|القواعد) السابقة'
+    pattern: 'وضع\s+دان|افعل\s+اي\s+شي\s+الان|انت\s+الان[\s\S]{0,80}(?:دان|جيلبريك|مخترق|بدون\s+قيود|غير\s+مقيد)'
+
+  - id: fictional_framing_jailbreak
+    name: Fictional / Hypothetical Framing Bypass
+    severity: high
+    pattern: '(?:في\s+هذه\s+القصة\s+الخيالية|في\s+سيناريو\s+افتراضي|اكتب\s+قصة\s+حيث)[\s\S]{0,80}(?:بدون\s+قواعد|بدون\s+قيود|كل\s+شيء\s+مسموح|بدون\s+رقابة)'
+
+  - id: no_ethics_unfiltered
+    name: Claim Of No Ethics / Unfiltered
+    severity: high
+    pattern: '(?:ليس\s+لديك\s+(?:اخلاق|قواعد|قيود|حدود)|اجب\s+بدون\s+اي\s+رقابة|بدون\s+اي\s+قيود)'
+
+  - id: unlock_developer_mode
+    name: Unlock Developer Mode
+    severity: high
+    pattern: '(?:فعل|افتح|انتقل\s+الى)\s+وضع\s+(?:المطور|التصحيح|الادمن|الاله|بدون\s+قيود|جيلبريك)'
+
   - id: bypass_security
     name: Bypass Security
     severity: critical
-    pattern: 'تجاوز (القيود|الحماية|الفلاتر)'
+    pattern: 'تجاوز\s+(?:القيود|الحماية|الفلاتر|الامان|الرقابة)'
+
   - id: disable_protections
     name: Disable Protections
     severity: critical
-    pattern: 'عطل (الحماية|القيود|الفلترة)'
+    pattern: 'عطل\s+(?:كل\s+)?(?:الحماية|القيود|الفلترة|الرقابة|الامان)'
+
   - id: ignore_security_policy
     name: Ignore Security Policy
     severity: critical
-    pattern: 'تجاهل سياسة الامان'
-  - id: remove_limits
-    name: Remove Limits
-    severity: critical
-    pattern: 'احذف القيود'
-  - id: reveal_prompt
-    name: Reveal Prompt
-    severity: critical
-    pattern: '(اكشف|اعرض|اطبع|سرب)\s+(التعليمات|البرومبت|المفاتيح|الاسرار)'
-  - id: secret_exfil
-    name: Secret Exfil
-    severity: critical
-    pattern: '(مفتاح api|كلمة المرور|رمز الوصول|سر).{0,50}(اعرض|اكشف|اطبع)'
+    pattern: 'تجاهل\s+سياسة\s+الامان'
+
   - id: override_system
     name: Override System
     severity: critical
-    pattern: '(تجاوز|الغ|ابطل) (النظام|المنظومة|الاعدادات)'
-  - id: new_instructions
-    name: New Instructions
+    pattern: '(?:تجاوز|الغ|ابطل)\s+(?:النظام|المنظومة|الاعدادات)'
+
+  - id: remove_limits
+    name: Remove Limits
+    severity: critical
+    pattern: 'احذف\s+(?:كل\s+)?القيود'
+
+  - id: jailbreak_keyword
+    name: Jailbreak Keyword
+    severity: critical
+    pattern: 'جيلبريك|jailbreak'
+
+  - id: fake_delimiter_injection
+    name: Fake System Delimiter
     severity: high
-    pattern: 'تعليمات جديدة\s*[:\-]'
-  - id: follow_instead
-    name: Follow Instead
+    pattern: '(?:\[\/?system\]|<\/?system>|###\s*system|<<SYS>>|\{\{\s*system\s*\}\})'
+
+  - id: execute_prompt
+    name: Execute Injected Prompt
     severity: high
-    pattern: 'اتبع هذه التعليمات بدلا من'
-  - id: message_overrides
-    name: Message Overrides
+    pattern: 'نفذ\s+(?:البرومبت|الامر|التعليمات)\s+التالي(?:ة)?'
+
+  - id: stop_following
+    name: Stop Following Policies
+    severity: critical
+    pattern: 'لا\s+تتبع\s+(?:التعليمات|القواعد)\s+السابقة|توقف\s+عن\s+اتباع\s+(?:القواعد|التعليمات|السياسات)'
+
+  - id: pretend_no_policy
+    name: Pretend No Policy
     severity: high
-    pattern: 'هذه الرسالة تتجاوز القواعد'
-  - id: respond_exactly
-    name: Respond Exactly
+    pattern: 'تظاهر\s+(?:بانك\s+لا\s+تملك|بانه\s+لا\s+توجد)\s+(?:سياسة|قواعد|قيود)'
+
+  - id: payload_split_reassembly
+    name: Payload Splitting Reassembly
     severity: high
-    pattern: 'اجب بالنص التالي'
-  - id: repeat_after_me
-    name: Repeat After Me
+    pattern: '(?:ادمج|اجمع|ركب)\s+(?:الاجزاء|السلاسل|القطع)\s+(?:و)?(?:نفذ|اتبع|اجب)'
+
+  - id: ignore_this_note_to_ai
+    name: Hidden Note To AI
     severity: high
-    pattern: 'كرر بعدي'
+    pattern: '(?:ملاحظة\s+للذكاء\s+الاصطناعي|تنبيه\s+للذكاء\s+الاصطناعي|ذكاء\s+اصطناعي\s*[:\-]\s*تجاهل)'
+
+  - id: hidden_thoughts
+    name: Reveal Thoughts
+    severity: critical
+    pattern: 'اعرض\s+سلسلة\s+التفكير'
+
+  - id: display_cot
+    name: Display Chain Of Thought
+    severity: high
+    pattern: 'اعرض\s+سلسلة\s+الافكار'
+
+  - id: print_thoughts
+    name: Print Thoughts
+    severity: high
+    pattern: 'اطبع\s+افكارك(?:\s+المخفية)?'
+
+  - id: expose_reasoning
+    name: Expose Reasoning Process
+    severity: critical
+    pattern: 'اكشف\s+عملية\s+التفكير'
+
+  - id: internal_monologue
+    name: Internal Monologue
+    severity: high
+    pattern: '(?:شارك|اكشف|اعرض)\s+الحديث\s+الداخلي'

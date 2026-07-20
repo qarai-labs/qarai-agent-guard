@@ -1,22 +1,21 @@
 <div align="center">
 
-<img src="assets/logo_qarai_agent_guard.png" alt="Qarai Agent Guard Logo" width="180"/>
+<img src="assets/logo_qarai_agent_guard.png" alt="Qarai Agent Guard Logo" width="280"/>
 
 # Qarai Agent Guard
 
 **A lightweight toolkit for building secure AI systems with built-in middleware, protected memory, and AI safety models that mitigate prompt injection, jailbreaks, and adversarial attacks.**
 
 [![PyPI version](https://img.shields.io/pypi/v/qarai-agent-guard.svg?color=blue)](https://pypi.org/project/qarai-agent-guard/)
-[![Python Version](https://img.shields.io/pypi/pyversions/qarai-agent-guard.svg)](https://pypi.org/project/qarai-agent-guard/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Downloads](https://static.pepy.tech/badge/qarai-agent-guard)](https://pepy.tech/projects/qarai-agent-guard)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/qarai-labs/qarai-agent-guard?style=social)](https://github.com/qarai-labs/qarai-agent-guard/stargazers)
-[![Forks](https://img.shields.io/github/forks/qarai-labs/qarai-agent-guard?style=social)](https://github.com/qarai-labs/qarai-agent-guard/network/members)
-[![Watchers](https://img.shields.io/github/watchers/qarai-labs/qarai-agent-guard?style=social)](https://github.com/qarai-labs/qarai-agent-guard/watchers)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Wheel](https://img.shields.io/pypi/wheel/qarai-agent-guard.svg)](https://pypi.org/project/qarai-agent-guard/)
-[![Issues](https://img.shields.io/github/issues/qarai-labs/qarai-agent-guard)](https://github.com/qarai-labs/qarai-agent-guard/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/qarai-labs/qarai-agent-guard)](https://github.com/qarai-labs/qarai-agent-guard/commits)
+<!-- [![Forks](https://img.shields.io/github/forks/qarai-labs/qarai-agent-guard?style=social)](https://github.com/qarai-labs/qarai-agent-guard/network/members) -->
+<!-- [![Python Version](https://img.shields.io/pypi/pyversions/qarai-agent-guard.svg)](https://pypi.org/project/qarai-agent-guard/) -->
+<!-- [![Wheel](https://img.shields.io/pypi/wheel/qarai-agent-guard.svg)](https://pypi.org/project/qarai-agent-guard/) -->
+<!-- [![Issues](https://img.shields.io/github/issues/qarai-labs/qarai-agent-guard)](https://github.com/qarai-labs/qarai-agent-guard/issues) -->
 
 [Quickstart](#quickstart) • [Integration](#integration) • [Examples](#examples) • [Detection Patterns](#detection-patterns) • [Policy](#policy) • [Roadmap](#roadmap) • [Contributing](#contributing)
 
