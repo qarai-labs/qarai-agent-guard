@@ -1,0 +1,110 @@
+[project]
+name = "qarai-agent-guard-crewai"
+dynamic = ["version"]
+
+description = "CrewAI integration for qarai-agent-guard that provides runtime security for AI agents through threat detection, policy enforcement, and content protection."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Oussama Ben Slama", email = "oussama@ben-slama.tn" },
+    { name = "Safouene Ziadi", email = "ziadisafouene@gmail.com" },
+]
+requires-python = ">=3.11"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Security",
+]
+
+keywords = [
+    "guardrails",
+    "ai-guardrails",
+    "ai-safety",
+    "llm",
+    "llm-safety",
+    "agents",
+    "ai-agents",
+    "prompt-injection",
+    "pii",
+    "data-privacy",
+    "nlp",
+    "arabic",
+    "arabic-nlp",
+    "ai-governance",
+    "crewai"
+]
+
+dependencies = [
+    "crewai>=1.15.6",
+    "qarai-agent-guard",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/qarai-labs/qarai-agent-guard"
+Repository = "https://github.com/qarai-labs/qarai-agent-guard"
+Issues = "https://github.com/qarai-labs/qarai-agent-guard/issues"
+
+[build-system]
+requires = [
+    "hatchling",
+    "uv-dynamic-versioning"
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+pattern = "crewai-v(?P<base>\\d+\\.\\d+\\.\\d+)"
+fallback-version = "0.0.0"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { git = { commit = true, tags = true } },
+]
+
+[tool.uv.sources]
+qarai-agent-guard = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["qarai_agent_guard_crewai"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "qarai_agent_guard_crewai",
+    "README.md",
+    "LICENSE",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.5.0",
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.14",
+    "twine>=6.2.0",
+    "uv-dynamic-versioning>=0.14.0",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
