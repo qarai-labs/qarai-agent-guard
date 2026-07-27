@@ -80,7 +80,7 @@ print(decision.action)   # Action.REDACT
 
 # Redact sensitive content
 redacted = guard.apply_redactions("My IBAN is FR1420041010050500013M02606")
-print(redacted)          # "Contact me at [REDACTED:iban]"
+print(redacted)          # "My IBAN is [REDACTED:iban]"
 ```
 
 ---
@@ -473,8 +473,7 @@ decision = guard.inspect(
     operation="write",
 )
 print(decision.action)   # Action.ALLOW (monitor mode overrides block/redact)
-print(decision.reason)   # "[MONITOR] would have blocked or redacted: ..."
-print(len(guard.events)) # Events are still recorded
+print(decision.reason)   # "[MONITOR] would have blocked or redacted: Personally identifiable information detected in 'data'"
 ```
 
 ---
