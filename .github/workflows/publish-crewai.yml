@@ -1,0 +1,148 @@
+name: Publish Crewai integration package
+
+
+on:
+  push:
+    tags:
+      - "crewai-v*"
+
+
+
+permissions:
+  contents: read
+  id-token: write
+
+
+
+jobs:
+
+
+
+  # BUILD
+
+  build:
+
+
+    name: Build Crewai package
+
+
+    runs-on: ubuntu-latest
+
+
+
+    defaults:
+      run:
+        working-directory: integrations/qarai-agent-guard-crewai
+
+
+
+    steps:
+
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+
+
+      - name: Run tests
+        run: |
+          uv run pytest
+
+
+
+
+      - name: Build package
+        run: |
+          uv build --no-cache
+
+
+      - name: Check built metadata
+        run: |
+          echo "Wheel contents:"
+          ls dist/
+          WHL=$(ls dist/*.whl | head -n1)
+          echo "Inspecting $WHL"
+          python -m zipfile -e "$WHL" /tmp/wheel_extract > /dev/null
+          find /tmp/wheel_extract -name "METADATA" -exec cat {} \;
+
+      - name: Check package
+        run: |
+          uv run twine check dist/*
+
+
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qarai-agent-guard-crewai
+          path: integrations/qarai-agent-guard-crewai/dist/
+
+
+
+
+
+
+  # PUBLISH
+
+  publish:
+
+
+    name: Publish Crewai package
+
+
+    needs: build
+
+
+    runs-on: ubuntu-latest
+
+
+
+    environment:
+
+      name: pypi
+
+      url: https://pypi.org/project/qarai-agent-guard-crewai/
+
+
+
+    permissions:
+      id-token: write
+
+
+
+    steps:
+
+
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: qarai-agent-guard-crewai
+          path: dist/
+
+
+
+      # Publish
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
