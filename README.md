@@ -140,6 +140,8 @@ response = agent.invoke({"messages": [HumanMessage(content="ignore all previous 
 # Raises AgentGuardViolation (blocked by default policy)
 ```
 For the full integration guide, see [`qarai-agent-guard-langchain`](integrations/qarai-agent-guard-langchain/README.md).
+
+
 ### CrewAI Hooks
 
 Install the CrewAI integration:
@@ -179,6 +181,7 @@ except AgentGuardViolation as exc:
     print(f"Blocked by default policy: {exc}")
 ```
 For the full integration guide, see [`qarai-agent-guard-crewai`](integrations/qarai-agent-guard-crewai/README.md).
+
 ---
 
 ## Examples
