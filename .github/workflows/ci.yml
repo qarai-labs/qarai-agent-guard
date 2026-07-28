@@ -59,3 +59,20 @@ jobs:
         working-directory: integrations/qarai-agent-guard-langchain
         run: |
           uv build
+
+    # Crewai integration package
+
+      - name: Install crewai dependencies
+        working-directory: integrations/qarai-agent-guard-crewai
+        run: |
+          uv sync --frozen
+
+      - name: Test Crewai package
+        working-directory: integrations/qarai-agent-guard-crewai
+        run: |
+          uv run pytest
+
+      - name: Build Crewai package
+        working-directory: integrations/qarai-agent-guard-crewai
+        run: |
+          uv build

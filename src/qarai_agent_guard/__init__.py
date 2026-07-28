@@ -18,7 +18,7 @@ from qarai_agent_guard.core.policies.defaults import (
     permissive_policy,
     strict_policy,
 )
-from qarai_agent_guard.core.schemas.events import Action
+from qarai_agent_guard.core.schemas.events import Action, Severity
 
 __all__ = [
     "ModelReasoningDetector",
