@@ -39,7 +39,7 @@ keywords = [
 
 dependencies = [
     "crewai>=1.15.6",
-    "qarai-agent-guard",
+    "qarai-agent-guard>=0.1.3",
 ]
 
 
