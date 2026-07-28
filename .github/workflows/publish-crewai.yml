@@ -74,7 +74,7 @@ jobs:
 
       - name: Build package
         run: |
-          uv build integrations/qarai-agent-guard-crewai --out-dir integrations/qarai-agent-guard-crewai/dist
+          uv build --out-dir dist
 
 
       - name: Check built metadata
