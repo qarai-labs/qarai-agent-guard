@@ -1,63 +1,65 @@
-from typing import Optional
+from typing import List
+from transformers import pipeline
 
 from qarai_agent_guard.core.detectors.models.base import BaseModel
 from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
 from qarai_agent_guard.core.detectors.models.schemas import DetectionResult
 
 
-@ModelRegistry.register(task="pii", name="distilbert_pii")
-class DistilBertPIIModel(BaseModel):
-    """Public, non-gated DistilBERT model for PII entity recognition."""
+@ModelRegistry.register("pii", "distilbert_pii")
+class DistilBertPIIDetector(BaseModel):
+    """Token-classification PII detector using a public DistilBERT PII model."""
 
-    def __init__(self, model_name_or_path: Optional[str] = None, device: str = "cpu"):
-        default_path = model_name_or_path or "SoelMgd/bert-pii-detection"
-        super().__init__(model_name_or_path=default_path, device=device)
-        self.tokenizer = None
-        self.model = None
+    def __init__(
+        self,
+        # Public, ungated HF model fine-tuned for PII token classification
+        model_name: str = "SoelMgd/bert-pii-detection",
+        device: str = "cpu",
+    ):
+        super().__init__(model_name=model_name, device=device)
+        self._ner_pipeline = None
 
     def load(self) -> None:
-        if self._is_loaded:
+        if self._loaded:
             return
 
-        from transformers import AutoModelForTokenClassification, AutoTokenizer
-
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
-        self.model = AutoModelForTokenClassification.from_pretrained(self.model_name_or_path)
-        self.model.to(self.device)
-        self.model.eval()
-        self._is_loaded = True
+        # Uses standard aggregation_strategy to merge sub-word entity tokens
+        self._ner_pipeline = pipeline(
+            "token-classification",
+            model=self.model_name,
+            device=self.device,
+            aggregation_strategy="simple",
+        )
+        self._loaded = True
 
     def predict(self, text: str) -> DetectionResult:
-        if not self._is_loaded:
+        if not self._loaded or self._ner_pipeline is None:
             self.load()
 
-        import torch
+        entities: List[dict] = self._ner_pipeline(text)
 
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        # Filter out non-PII or low-confidence tokens if necessary
+        pii_entities = [
+            entity for entity in entities 
+            if entity.get("score", 0.0) >= 0.40 and entity.get("entity_group", "O") != "O"
+        ]
 
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-            logits = outputs.logits
-            probs = torch.softmax(logits, dim=-1)
-
-        # Get predicted labels per token
-        predictions = torch.argmax(probs, dim=-1).squeeze(0).tolist()
+        detected = len(pii_entities) > 0
         
-        # Check if any token is classified as non-O (i.e. PII entity detected)
-        # Label 0 is usually 'O' (Outside / No PII)
-        detected_entities = [p for p in predictions if p != 0]
-        is_detected = len(detected_entities) > 0
+        # Calculate maximum confidence score across detected entities
+        max_score = (
+            max([float(e["score"]) for e in pii_entities]) if detected else 0.0
+        )
 
-        # Calculate confidence score as the highest entity probability found
-        max_score = float(torch.max(probs[:, :, 1:]).item()) if is_detected else 0.0
+        detected_types = list({e["entity_group"] for e in pii_entities})
 
         return DetectionResult(
-            detected=is_detected,
+            detected=detected,
             score=max_score,
-            label="pii_detected" if is_detected else "clean",
+            label="pii_detected" if detected else "clean",
             metadata={
-                "model_name": self.name,
-                "detected_token_count": len(detected_entities),
+                "detected_token_count": len(pii_entities),
+                "detected_types": detected_types,
+                "entities": pii_entities,
             },
         )

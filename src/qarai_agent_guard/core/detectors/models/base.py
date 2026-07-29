@@ -22,6 +22,11 @@ class BaseModel(abc.ABC):
         """Returns True if model weights and tokenizer/assets are loaded into memory."""
         return self._is_loaded
 
+    def set_is_loaded(self, value : bool) -> None:
+        """Setter for is_loaded """
+        self._is_loaded = value
+        return;
+
     @abc.abstractmethod
     def load(self) -> None:
         """Loads weights, tokenizers, or establishes connection to remote endpoints.
