@@ -1,5 +1,5 @@
 from transformers import pipeline
-from qarai_agent_guard.core.detectors.models.base import BaseModel, DetectionResult
+from qarai_agent_guard.core.detectors.models.base import BaseModel, ModelDetectionResult
 from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
 
 
@@ -26,7 +26,7 @@ class ProtectAIDebertaModel(BaseModel):
         )
         self.set_is_loaded(True)
 
-    def predict(self, text: str) -> DetectionResult:
+    def predict(self, text: str) -> ModelDetectionResult:
         if not self.is_loaded or self._classifier is None:
             self.load()
 
@@ -39,7 +39,7 @@ class ProtectAIDebertaModel(BaseModel):
         # Handles deepset output ('INJECTION' vs 'LEGIT') as well as standard ('LABEL_1')
         is_injection = raw_label in ["INJECTION", "LABEL_1", "PROMPT_INJECTION"]
 
-        return DetectionResult(
+        return ModelDetectionResult(
             detected=is_injection,
             score=score if is_injection else (1.0 - score),
             label="prompt_injection" if is_injection else "clean",

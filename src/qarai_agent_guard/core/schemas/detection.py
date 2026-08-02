@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
+
 LANGUAGE_ALIASES: dict[str, str] = {
     "en": "en",
     "fr": "fr",
@@ -45,3 +47,4 @@ class DetectionResult:
     message: str = ""
     matches: list[Match] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    model_detection_result: ModelDetectionResult | None = None

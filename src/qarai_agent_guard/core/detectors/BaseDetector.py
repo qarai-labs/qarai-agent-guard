@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from qarai_agent_guard.core.detectors.models.inference import InferenceEngine
+from qarai_agent_guard.core.detectors.models.loader import ModelLoader
 from qarai_agent_guard.core.helpers.stringify import _stringify
 from qarai_agent_guard.core.loaders.pattern_loader import PatternLoader
 from qarai_agent_guard.core.schemas.detection import (
@@ -31,6 +33,7 @@ class BaseDetector(ABC):
         patterns: list[dict[str, Any]] | None = None,
         pattern_paths: list[Path] | None = None,
         loader: PatternLoader | None = None,
+        detector_type: str = "regex",
     ) -> None:
         """Initialize the detector and load its pattern rules.
 
@@ -46,7 +49,9 @@ class BaseDetector(ABC):
                 Used only when ``patterns`` is not provided.
             loader: Pattern loader instance. When omitted, a loader rooted at
                 ``PATTERNS_ROOT`` is created.
-
+            detector_type : Type of detector to use . 4 types are supported 
+            "regex","model","model_first","regex_first"
+            default is regex
         Raises:
             TypeError:
                 - If ``lang`` is not a string.
@@ -64,6 +69,9 @@ class BaseDetector(ABC):
         if not lang.strip():
             msg = "lang must not be empty"
             raise ValueError(msg)
+        
+        if detector_type not in ["regex","model","model_first","regex_first"]:
+            msg = f"detector_type must be one of regex, model, model_first, regex_first, got {detector_type}"
 
         if patterns is not None:
             if not isinstance(patterns, list):
@@ -100,6 +108,7 @@ class BaseDetector(ABC):
 
         self._lang = lang
         self._loader = loader or PatternLoader(PATTERNS_ROOT)
+        self._detector_type = detector_type
 
         if patterns is not None:
             self._rules = patterns
@@ -111,6 +120,10 @@ class BaseDetector(ABC):
             self._rules = self._load_default_rules()
 
         self._rules, self._compiled = self._compile_pattern_rules(self._rules)
+
+        if self._detector_type in ["model","model_first","regex_first"]:
+            self._model_loader = ModelLoader(default_device="cpu")
+            self._model_engine = InferenceEngine(loader=self._model_loader)
 
     @abstractmethod
     def _load_default_rules(self) -> list[dict[str, Any]]:

@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 
 @dataclass
-class DetectionResult:
+class ModelDetectionResult:
     """Unified detection output across all models and detectors."""
 
     detected: bool

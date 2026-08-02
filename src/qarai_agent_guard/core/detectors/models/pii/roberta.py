@@ -3,7 +3,7 @@ from transformers import pipeline
 
 from qarai_agent_guard.core.detectors.models.base import BaseModel
 from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
-from qarai_agent_guard.core.detectors.models.schemas import DetectionResult
+from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
 
 
 @ModelRegistry.register("pii", "distilbert_pii")
@@ -12,28 +12,27 @@ class DistilBertPIIDetector(BaseModel):
 
     def __init__(
         self,
-        # Public, ungated HF model fine-tuned for PII token classification
-        model_name: str = "SoelMgd/bert-pii-detection",
+        model_name_or_path: str = "SoelMgd/bert-pii-detection",
         device: str = "cpu",
     ):
-        super().__init__(model_name=model_name, device=device)
+        super().__init__(model_name_or_path=model_name_or_path, device=device)
         self._ner_pipeline = None
 
     def load(self) -> None:
-        if self._loaded:
+        if self.is_loaded:
             return
 
         # Uses standard aggregation_strategy to merge sub-word entity tokens
         self._ner_pipeline = pipeline(
             "token-classification",
-            model=self.model_name,
+            model=self.model_name_or_path,
             device=self.device,
             aggregation_strategy="simple",
         )
-        self._loaded = True
+        self.set_is_loaded(True)
 
-    def predict(self, text: str) -> DetectionResult:
-        if not self._loaded or self._ner_pipeline is None:
+    def predict(self, text: str) -> ModelDetectionResult:
+        if not self.is_loaded or self._ner_pipeline is None:
             self.load()
 
         entities: List[dict] = self._ner_pipeline(text)
@@ -53,7 +52,7 @@ class DistilBertPIIDetector(BaseModel):
 
         detected_types = list({e["entity_group"] for e in pii_entities})
 
-        return DetectionResult(
+        return ModelDetectionResult(
             detected=detected,
             score=max_score,
             label="pii_detected" if detected else "clean",
