@@ -51,7 +51,7 @@ class BaseDetector(ABC):
             loader: Pattern loader instance. When omitted, a loader rooted at
                 ``PATTERNS_ROOT`` is created.
             detector_type : Type of detector to use . 4 types are supported 
-            "regex","model","model_first","regex_first"
+            "regex","model","mixed"
             default is regex
         Raises:
             TypeError:
@@ -71,7 +71,7 @@ class BaseDetector(ABC):
             msg = "lang must not be empty"
             raise ValueError(msg)
         
-        if detector_type not in ["regex","model","model_first","regex_first"]:
+        if detector_type not in ["regex","model","mixed"]:
             msg = f"detector_type must be one of regex, model, model_first, regex_first, got {detector_type}"
 
         if patterns is not None:
