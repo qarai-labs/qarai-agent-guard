@@ -3,7 +3,7 @@ from qarai_agent_guard.core.detectors.models.base import BaseModel, ModelDetecti
 from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
 
 
-@ModelRegistry.register("prompt_injection", "protectai_deberta")
+@ModelRegistry.register("model_reasoning", "protectai_deberta")
 class ProtectAIDebertaModel(BaseModel):
     """Prompt injection detector using deepset's public, ungated model."""
 
