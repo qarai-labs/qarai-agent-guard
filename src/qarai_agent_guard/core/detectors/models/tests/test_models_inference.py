@@ -1,8 +1,8 @@
 import pytest
-from qarai_agent_guard.core.detectors.models.base import ModelDetectionResult
-from qarai_agent_guard.core.detectors.models.inference import InferenceEngine
-from qarai_agent_guard.core.detectors.models.loader import ModelLoader
-from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
+from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
+from qarai_agent_guard.core.detectors.models.InferenceEngine import InferenceEngine
+from qarai_agent_guard.core.detectors.models.ModelLoader import ModelLoader
+from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 
 # Ensure all model wrappers are imported and registered
 import qarai_agent_guard.core.detectors.models.pii

@@ -1,6 +1,6 @@
 from transformers import pipeline
-from qarai_agent_guard.core.detectors.models.base import BaseModel, ModelDetectionResult
-from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
+from qarai_agent_guard.core.detectors.models.BaseModel import BaseModel, ModelDetectionResult
+from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 
 
 @ModelRegistry.register("model_reasoning", "protectai_deberta")

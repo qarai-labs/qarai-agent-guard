@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from qarai_agent_guard.core.detectors.models.inference import InferenceEngine
-from qarai_agent_guard.core.detectors.models.loader import ModelLoader
+from qarai_agent_guard.core.detectors.models.InferenceEngine import InferenceEngine
+from qarai_agent_guard.core.detectors.models.ModelLoader import ModelLoader
 from qarai_agent_guard.core.helpers.stringify import _stringify
 from qarai_agent_guard.core.loaders.pattern_loader import PatternLoader
 from qarai_agent_guard.core.schemas.detection import (
@@ -15,7 +15,7 @@ from qarai_agent_guard.core.schemas.detection import (
     Match,
 )
 
-from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
+from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 
 import qarai_agent_guard.core.detectors.models.pii
 import qarai_agent_guard.core.detectors.models.model_reasoning

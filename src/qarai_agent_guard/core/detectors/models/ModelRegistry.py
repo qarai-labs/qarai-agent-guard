@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Type
-from qarai_agent_guard.core.detectors.models.base import BaseModel
+from qarai_agent_guard.core.detectors.models.BaseModel import BaseModel
 
 
 

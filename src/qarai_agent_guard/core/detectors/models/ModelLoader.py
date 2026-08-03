@@ -1,8 +1,8 @@
 import threading
 from typing import Dict, Optional
 
-from qarai_agent_guard.core.detectors.models.base import BaseModel
-from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
+from qarai_agent_guard.core.detectors.models.BaseModel import BaseModel
+from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 
 class ModelLoader:
     """Thread-safe singleton managing model instances and memory caching."""

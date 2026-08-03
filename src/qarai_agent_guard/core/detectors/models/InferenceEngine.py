@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 
-from qarai_agent_guard.core.detectors.models.loader import ModelLoader
+from qarai_agent_guard.core.detectors.models.ModelLoader import ModelLoader
 from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
 
 
