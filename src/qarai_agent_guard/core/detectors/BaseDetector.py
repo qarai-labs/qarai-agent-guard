@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from qarai_agent_guard import ModelReasoningDetector, PIIDetector
 from qarai_agent_guard.core.detectors.models.inference import InferenceEngine
 from qarai_agent_guard.core.detectors.models.loader import ModelLoader
 from qarai_agent_guard.core.helpers.stringify import _stringify
@@ -191,14 +190,9 @@ class BaseDetector(ABC):
             )
         model_detection_result = None
         if self._detector_type!="regex":
-            if isinstance(self, ModelReasoningDetector):
-                task = "model_reasoning"
-                model_detection_result = self._model_engine.predict(task=task,models="protectai_deberta",text=text)
-
-            elif isinstance(self, PIIDetector):
-                task = "pii"
-                model_detection_result = self._model_engine.predict(task=task,models="distilbert_pii",text=text)
-        
+            task = self.name
+            model_detection_result = self._model_engine.predict(task=task,models="distilbert_pii",text=text)
+    
 
         if not hits:
             return DetectionResult(

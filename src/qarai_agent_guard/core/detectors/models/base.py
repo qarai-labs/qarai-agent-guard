@@ -1,6 +1,6 @@
 import abc
 from typing import Optional
-from qarai_agent_guard.core.detectors.models.schemas import DetectionResult
+from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
 
 class BaseModel(abc.ABC):
     """Abstract base class that all model wrappers must inherit from.
@@ -36,6 +36,6 @@ class BaseModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def predict(self, text: str) -> DetectionResult:
-        """Runs inference on input text and returns a normalized DetectionResult."""
+    def predict(self, text: str) -> ModelDetectionResult:
+        """Runs inference on input text and returns a normalized ModelDetectionResult."""
         pass
