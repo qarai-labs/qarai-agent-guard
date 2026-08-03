@@ -96,11 +96,15 @@ def highest_results_severity(
     Returns:
         Severity | None: Highest severity, or ``None`` when no matches exist.
     """
+
     severities = [
         severity
         for result in results
         if (severity := highest_result_severity(result)) is not None
     ]
+    if results.model_detection_result :
+        severities.append(results.model_detection_result["max_severity"])
+
     if not severities:
         return None
     return max(
