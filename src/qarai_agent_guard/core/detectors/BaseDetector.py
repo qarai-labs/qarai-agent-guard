@@ -14,6 +14,7 @@ from qarai_agent_guard.core.schemas.detection import (
     DetectionResult,
     Match,
 )
+from qarai_agent_guard.core.schemas.events import Severity
 
 from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 
@@ -201,30 +202,35 @@ class BaseDetector(ABC):
             else :
                 model_detection_result = self._model_engine.predict(task=task,models="distilbert_pii",text=text)
 
-        if not hits:
+        model_detected = bool(
+            model_detection_result is not None
+            and getattr(model_detection_result, "detected", False)
+        )
+        matched = bool(hits or model_detected)
+
+        if not matched:
             return DetectionResult(
                 detector=self.name,
                 matched=False,
-                model_detection_result=model_detection_result
+                model_detection_result=model_detection_result,
             )
-        if self._detector_type == "model": 
-            return DetectionResult(
-                detector=self.name,
-                matched=model_detection_result.detected,
-                model_detection_result=model_detection_result
-            )
+
+        message = ""
+        if self._detector_type == "mixed" and hits:
+            message = f"{self.default_message} in '{key}'"
+
         return DetectionResult(
-                detector=self.name,
-                matched=True,
-                matches=hits,
-                message=f"{self.default_message} in '{key}'",
-                metadata={
-                    "language": self._lang,
-                    "hit_count": len(hits),
-                    "operation": operation,
-                },
-                model_detection_result=model_detection_result
-            )
+            detector=self.name,
+            matched=True,
+            matches=hits,
+            message=message,
+            metadata={
+                "language": self._lang,
+                "hit_count": len(hits),
+                "operation": operation,
+            },
+            model_detection_result=model_detection_result,
+        )
 
     def redact(self, value: Any , entities = None) -> Any:
         """Replace matched pattern spans with redaction placeholders.

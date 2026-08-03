@@ -6,7 +6,9 @@ import pytest
 
 from qarai_agent_guard.core.detectors.BaseDetector import BaseDetector
 from qarai_agent_guard.core.detectors.PIIDetector import PIIDetector
+from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
 from qarai_agent_guard.core.guards.agent_guard import AgentGuard
+from qarai_agent_guard.core.schemas.detection import DetectionResult
 from qarai_agent_guard.core.guards.config import (
     ExecutionStrategy,
     FailBehavior,
@@ -103,6 +105,54 @@ def test_agent_guard_redacts_medium_severity():
     guard = AgentGuard(detectors=[PIIDetector()])
     redacted = guard.apply_redactions("iban FR1420041010050500013M02606")
     assert "[REDACTED:iban]" in redacted
+
+
+def test_apply_redactions_uses_model_detection_entities():
+    class EntityAwareDetector(BaseDetector):
+        name = "entity_detector"
+
+        def _load_default_rules(self):
+            return []
+
+        def inspect(self, key, value, operation):
+            return DetectionResult(
+                detector=self.name,
+                matched=True,
+                message="model pii detected",
+                model_detection_result=ModelDetectionResult(
+                    detected=True,
+                    score=0.95,
+                    label="pii_detected",
+                    metadata={
+                        "max_severity": Severity.CRITICAL,
+                        "entities": [
+                            {"start": 0, "end": 5, "entity_group": "EMAIL"}
+                        ],
+                    },
+                ),
+            )
+
+        def redact(self, value, entities=None):
+            assert entities is not None
+            text = str(value)
+            for ent in sorted(entities, key=lambda item: item["start"], reverse=True):
+                text = (
+                    text[: ent["start"]]
+                    + f"[REDACTED:{ent['entity_group']}]"
+                    + text[ent["end"] :]
+                )
+            return text
+
+    guard = AgentGuard(detectors=[EntityAwareDetector()])
+    _, detections = guard.inspect_with_results(
+        key="memory",
+        value="abcde",
+        operation="write",
+    )
+
+    redacted = guard.apply_redactions("abcde", detections=detections)
+
+    assert redacted == "[REDACTED:EMAIL]"
 
 
 def test_inspect_with_results_returns_detections(agent_guard):

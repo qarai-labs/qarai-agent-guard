@@ -498,6 +498,16 @@ class AgentGuard:
                 if sev is not None and severity_order.index(sev) >= threshold_idx:
                     allowed.add(result.detector)
 
+        entities_by_detector: dict[str, list[dict[str, Any]]] = {}
+        if detections is not None:
+            for result in detections:
+                if result.model_detection_result is None:
+                    continue
+                metadata = getattr(result.model_detection_result, "metadata", {}) or {}
+                entities = metadata.get("entities")
+                if isinstance(entities, list):
+                    entities_by_detector[result.detector] = entities
+
         redacted = value
         for detector in self.detectors:
             if detector.name in self._disabled:
@@ -506,8 +516,17 @@ class AgentGuard:
                 continue
             if not hasattr(detector, "redact"):
                 continue
+            entities = entities_by_detector.get(detector.name)
             try:
-                redacted = detector.redact(redacted)
+                if entities is not None:
+                    try:
+                        redacted = detector.redact(redacted, entities=entities)
+                    except TypeError as exc:
+                        if "unexpected keyword argument" not in str(exc):
+                            raise
+                        redacted = detector.redact(redacted)
+                else:
+                    redacted = detector.redact(redacted)
             except Exception as exc:
                 err = RedactionError(
                     f"Detector '{detector.name}' redaction failed: {exc}"

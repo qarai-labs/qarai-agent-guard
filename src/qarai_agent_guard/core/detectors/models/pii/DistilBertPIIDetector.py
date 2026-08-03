@@ -2,8 +2,8 @@ from typing import List
 from numpy import extract
 from transformers import pipeline
 
-from qarai_agent_guard import Severity
 from qarai_agent_guard.core.detectors.models.BaseModel import BaseModel
+from qarai_agent_guard.core.schemas.events import Severity
 from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
 from qarai_agent_guard.core.detectors.models.pii.pii_config import critical
 from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
@@ -64,14 +64,13 @@ class DistilBertPIIDetector(BaseModel):
                 "detected_token_count": len(pii_entities),
                 "detected_types": detected_types,
                 "entities": pii_entities,
-                "max_severity" : self.extract_max_severity(detected_types)
+                "max_severity": self.extract_max_severity(detected_types),
             },
         )
-    
-    def extract_max_severity (detected_types) -> Severity:
-        severities = [Severity.CRITICAL if type in critical else Severity.INFO for type in detected_types]
 
-        if Severity.CRITICAL in severities :
+    def extract_max_severity(self, detected_types: List[str]) -> Severity:
+        severities = [Severity.CRITICAL if entity_type in critical else Severity.INFO for entity_type in detected_types]
+
+        if Severity.CRITICAL in severities:
             return Severity.CRITICAL
-        else :
-            return Severity.INFO
+        return Severity.INFO
