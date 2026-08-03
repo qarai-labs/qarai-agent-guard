@@ -81,6 +81,12 @@ def highest_result_severity(result: DetectionResult) -> Severity | None:
         Severity | None: Highest match severity, or ``None`` when no matches
         exist.
     """
+    if result.model_detection_result :
+        model_detection_severity = result.model_detection_result.metadata["max_severity"]
+        return max(
+            [model_detection_severity,highest_match_severity(result.matches)],
+            key=lambda severity: list(Severity).index(severity),
+        ) 
     return highest_match_severity(result.matches)
 
 
@@ -102,9 +108,7 @@ def highest_results_severity(
         for result in results
         if (severity := highest_result_severity(result)) is not None
     ]
-    if results.model_detection_result :
-        severities.append(results.model_detection_result["max_severity"])
-
+    
     if not severities:
         return None
     return max(

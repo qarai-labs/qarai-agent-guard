@@ -226,7 +226,7 @@ class BaseDetector(ABC):
                 model_detection_result=model_detection_result
             )
 
-    def redact(self, value: Any) -> Any:
+    def redact(self, value: Any , entities = None) -> Any:
         """Replace matched pattern spans with redaction placeholders.
 
         Args:
@@ -242,6 +242,11 @@ class BaseDetector(ABC):
                 f"[REDACTED:{rule['id']}]",
                 text,
             )
+        if entities :
+            for ent in sorted(entities, key=lambda e: e['start'], reverse=True):
+                start, end = ent['start'], ent['end']
+                text = text[:start] + f"[REDACTED] : {ent['entity_group']}"  + text[end:]
+
         return text
 
     def _compile_pattern_rules(

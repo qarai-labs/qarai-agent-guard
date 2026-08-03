@@ -1,6 +1,7 @@
 from transformers import pipeline
 from qarai_agent_guard.core.detectors.models.BaseModel import BaseModel, ModelDetectionResult
 from qarai_agent_guard.core.detectors.models.ModelRegistry import ModelRegistry
+from qarai_agent_guard.core.schemas.events import Severity
 
 
 @ModelRegistry.register("model_reasoning", "protectai_deberta")
@@ -43,5 +44,10 @@ class ProtectAIDebertaModel(BaseModel):
             detected=is_injection,
             score=score if is_injection else (1.0 - score),
             label="model_reasoning" if is_injection else "clean",
-            metadata={"raw_label": top_pred["label"], "raw_score": score},
+            metadata={
+                    "raw_label": top_pred["label"],
+                    "raw_score": score,
+                    "max_severity" : Severity.CRITICAL
+            },
+
         )
