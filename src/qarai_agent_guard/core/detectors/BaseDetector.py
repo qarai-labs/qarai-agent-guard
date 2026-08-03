@@ -15,6 +15,11 @@ from qarai_agent_guard.core.schemas.detection import (
     Match,
 )
 
+from qarai_agent_guard.core.detectors.models.registry import ModelRegistry
+
+import qarai_agent_guard.core.detectors.models.pii
+import qarai_agent_guard.core.detectors.models.model_reasoning
+
 
 class BaseDetector(ABC):
     """Base detector that matches YAML-defined regex rules.
@@ -121,7 +126,7 @@ class BaseDetector(ABC):
 
         self._rules, self._compiled = self._compile_pattern_rules(self._rules)
 
-        if self._detector_type in ["model","model_first","regex_first"]:
+        if self._detector_type != "regex":
             self._model_loader = ModelLoader(default_device="cpu")
             self._model_engine = InferenceEngine(loader=self._model_loader)
 
@@ -191,8 +196,10 @@ class BaseDetector(ABC):
         model_detection_result = None
         if self._detector_type!="regex":
             task = self.name
-            model_detection_result = self._model_engine.predict(task=task,models="distilbert_pii",text=text)
-    
+            if task == "model_reasoning":
+                model_detection_result = self._model_engine.predict(task=task,models="protectai_deberta",text=text)
+            else :
+                model_detection_result = self._model_engine.predict(task=task,models="distilbert_pii",text=text)
 
         if not hits:
             return DetectionResult(
@@ -200,19 +207,24 @@ class BaseDetector(ABC):
                 matched=False,
                 model_detection_result=model_detection_result
             )
-
+        if self._detector_type == "model": 
+            return DetectionResult(
+                detector=self.name,
+                matched=model_detection_result.detected,
+                model_detection_result=model_detection_result
+            )
         return DetectionResult(
-            detector=self.name,
-            matched=True,
-            matches=hits,
-            message=f"{self.default_message} in '{key}'",
-            metadata={
-                "language": self._lang,
-                "hit_count": len(hits),
-                "operation": operation,
-            },
-            model_detection_result=model_detection_result
-        )
+                detector=self.name,
+                matched=True,
+                matches=hits,
+                message=f"{self.default_message} in '{key}'",
+                metadata={
+                    "language": self._lang,
+                    "hit_count": len(hits),
+                    "operation": operation,
+                },
+                model_detection_result=model_detection_result
+            )
 
     def redact(self, value: Any) -> Any:
         """Replace matched pattern spans with redaction placeholders.

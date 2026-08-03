@@ -30,7 +30,7 @@ class PIIDetector(BaseDetector):
         pattern_paths: list[Path] | None = None,
         ignore: frozenset[str] | None = None,
         loader: PatternLoader | None = None,
-        detection_type : str = "regex"
+        detector_type : str = "regex"
     ) -> None:
         """Initialize the PII detector.
 
@@ -62,7 +62,7 @@ class PIIDetector(BaseDetector):
             patterns=patterns,
             pattern_paths=pattern_paths,
             loader=loader or PatternLoader(PATTERNS_ROOT),
-            detection_type=detection_type
+            detector_type=detector_type
         )
 
         if self._ignore:

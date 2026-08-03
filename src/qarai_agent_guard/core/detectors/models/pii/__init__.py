@@ -1,4 +1,4 @@
-from .roberta import DistilBertPIIDetector
+from .DistilBertPIIDetector import DistilBertPIIDetector
 
 __all__ = [
     "DistilBertPIIDetector",

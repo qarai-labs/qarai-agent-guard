@@ -33,7 +33,7 @@ class ModelReasoningDetector(BaseDetector):
         patterns: list[dict[str, Any]] | None = None,
         pattern_paths: list[Path] | None = None,
         loader: PatternLoader | None = None,
-        detection_type : str = "regex"
+        detector_type : str = "regex"
     ) -> None:
         """Initialize the model reasoning detector.
 
@@ -74,7 +74,7 @@ class ModelReasoningDetector(BaseDetector):
             patterns=patterns,
             pattern_paths=pattern_paths,
             loader=loader or PatternLoader(PATTERNS_ROOT),
-            detection_type=detection_type
+            detector_type=detector_type
         )
 
     def _load_default_rules(self) -> list[dict[str, Any]]:

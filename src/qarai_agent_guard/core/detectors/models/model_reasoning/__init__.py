@@ -1,4 +1,4 @@
-from .protectai_deberta import ProtectAIDebertaModel
+from .ProtectAIDebertaModel import ProtectAIDebertaModel
 
 __all__ = [
     "ProtectAIDebertaModel",

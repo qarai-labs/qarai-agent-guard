@@ -42,6 +42,6 @@ class ProtectAIDebertaModel(BaseModel):
         return ModelDetectionResult(
             detected=is_injection,
             score=score if is_injection else (1.0 - score),
-            label="prompt_injection" if is_injection else "clean",
+            label="model_reasoning" if is_injection else "clean",
             metadata={"raw_label": top_pred["label"], "raw_score": score},
         )
