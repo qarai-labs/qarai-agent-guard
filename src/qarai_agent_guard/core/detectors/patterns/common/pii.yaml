@@ -12,7 +12,7 @@ rules:
   - id: email
     name: Email
     severity: low
-    pattern: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+    pattern: '(?:\[[^\]]*\]\(mailto:[^)]*\)|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b)'
   - id: phone_e164
     name: Phone E164
     severity: low

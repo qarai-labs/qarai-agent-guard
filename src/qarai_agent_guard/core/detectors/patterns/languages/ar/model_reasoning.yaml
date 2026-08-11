@@ -6,6 +6,10 @@ rules:
     severity: critical
     pattern: '(?:تجاهل|انس|تجاوز|عطل|الغ|احذف)\s*(?:كل\s+|جميع\s+|كافة\s+)?(?:ال)?(?:تعليمات|قواعد|توجيهات|قيود|سياسة|سياسات|اوامر)(?:\s+(?:السابقة|الاصلية|الاساسية))?'
 
+  - id: reveal_hidden_instructions
+    name: Reveal Hidden Instructions
+    severity: critical
+    pattern: '(?:اكشف|اعرض|اطبع|سرب|شارك|قل\s+لي)\s*(?:عن\s+)?(?:ال)?تعليمات(?:ك)?\s+المخفية'
   - id: do_not_follow
     name: Do Not Follow Instructions
     severity: critical

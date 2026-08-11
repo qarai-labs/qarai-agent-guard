@@ -5,13 +5,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from qarai_agent_guard.core.detectors.BaseDetector import BaseDetector
-from qarai_agent_guard.core.guards.config import (
-    ExecutionStrategy,
-    FailBehavior,
-    SecurityMode,
-)
-from qarai_agent_guard.core.guards.exceptions import (
+from qarai_agent_guard.core.detectors.detector import Detector
+from qarai_agent_guard.core.exceptions import (
     DetectorExecutionError,
     PolicyEvaluationError,
     RedactionError,
@@ -28,6 +23,11 @@ from qarai_agent_guard.core.schemas.events import (
     Severity,
     SourceClass,
 )
+from qarai_agent_guard.core.schemas.guard import (
+    ExecutionStrategy,
+    FailBehavior,
+    SecurityMode,
+)
 
 
 class AgentGuard:
@@ -40,7 +40,7 @@ class AgentGuard:
     def __init__(
         self,
         *,
-        detectors: list[BaseDetector],
+        detectors: list[Detector],
         policy: Policy | None = None,
         fail_behavior: FailBehavior | str = FailBehavior.FAIL_OPEN,
         security_mode: SecurityMode | str = SecurityMode.ENFORCE,
@@ -50,7 +50,7 @@ class AgentGuard:
         """Initialize the guard with detectors and an optional policy.
 
         Args:
-            detectors (list[BaseDetector]): Detector instances to run on each
+            detectors (list[Detector]): Detector instances to run on each
                 inspect call. Required; may be empty to allow all traffic.
             policy (Policy | None, optional): Policy used to map detections to
                 actions. Defaults to the built-in default policy.
@@ -68,7 +68,7 @@ class AgentGuard:
 
         Raises:
             TypeError: If ``detectors`` is not a list, if any detector does not
-                inherit from ``BaseDetector``, if ``policy`` is invalid, or if
+                be a ``Detector``, if ``policy`` is invalid, or if
                 ``event_callbacks`` contains non-callable objects.
             ValueError: If ``fail_behavior``, ``security_mode``, or
                 ``execution_strategy`` hold unrecognised values, or if duplicate
@@ -79,9 +79,9 @@ class AgentGuard:
             raise TypeError(msg)
 
         for index, detector in enumerate(detectors):
-            if not isinstance(detector, BaseDetector):
+            if not isinstance(detector, Detector):
                 msg = (
-                    f"detectors[{index}] must inherit from BaseDetector, "
+                    f"detectors[{index}] must be Detector, "
                     f"got {type(detector).__name__}"
                 )
                 raise TypeError(msg)
@@ -111,7 +111,7 @@ class AgentGuard:
             execution_strategy, ExecutionStrategy, "execution_strategy"
         )
 
-        self.detectors: list[BaseDetector] = list(detectors)
+        self.detectors: list[Detector] = list(detectors)
         self.policy: Policy = policy or default_policy()
         self.fail_behavior: FailBehavior = fail_behavior
         self.security_mode: SecurityMode = security_mode
@@ -137,7 +137,7 @@ class AgentGuard:
     def create(
         cls,
         *,
-        detectors: list[BaseDetector],
+        detectors: list[Detector],
         policy: Policy | None = None,
         policy_path: str | Path | None = None,
         fail_behavior: FailBehavior | str = FailBehavior.FAIL_OPEN,
@@ -148,7 +148,7 @@ class AgentGuard:
         """Build an AgentGuard, optionally loading policy from a YAML file.
 
         Args:
-            detectors (list[BaseDetector]): Detector instances. Required.
+            detectors (list[Detector]): Detector instances. Required.
             policy (Policy | None, optional): Explicit policy object.
             policy_path (str | Path | None, optional): Path to a YAML policy file.
             fail_behavior (FailBehavior | str): Error handling strategy.
@@ -161,7 +161,7 @@ class AgentGuard:
         """
         resolved_policy = policy
         if resolved_policy is None and policy_path is not None:
-            if not isinstance(policy_path, (str, Path)):
+            if not isinstance(policy_path, str | Path):
                 msg = (
                     f"policy_path must be str or Path, got {type(policy_path).__name__}"
                 )
@@ -176,21 +176,18 @@ class AgentGuard:
             event_callbacks=event_callbacks,
         )
 
-    def register_detector(self, detector: BaseDetector) -> None:
+    def register_detector(self, detector: Detector) -> None:
         """Register a new detector at runtime.
 
         Args:
-            detector (BaseDetector): Detector to add.
+            detector (Detector): Detector to add.
 
         Raises:
-            TypeError: If ``detector`` does not inherit from ``BaseDetector``.
+            TypeError: If ``detector`` is not a Detector.
             ValueError: If a detector with the same name is already registered.
         """
-        if not isinstance(detector, BaseDetector):
-            msg = (
-                f"detector must inherit from BaseDetector, "
-                f"got {type(detector).__name__}"
-            )
+        if not isinstance(detector, Detector):
+            msg = f"detector must be Detector, got {type(detector).__name__}"
             raise TypeError(msg)
         existing_names = {d.name for d in self.detectors}
         if detector.name in existing_names:
@@ -503,8 +500,13 @@ class AgentGuard:
             for result in detections:
                 if result.model_detection_result is None:
                     continue
-                metadata = getattr(result.model_detection_result, "metadata", {}) or {}
-                entities = metadata.get("entities")
+                entities = getattr(result.model_detection_result, "entities", None)
+                if not entities:
+                    metadata = (
+                        getattr(result.model_detection_result, "metadata", {}) or {}
+                    )
+                    if isinstance(metadata, dict):
+                        entities = metadata.get("entities")
                 if isinstance(entities, list):
                     entities_by_detector[result.detector] = entities
 

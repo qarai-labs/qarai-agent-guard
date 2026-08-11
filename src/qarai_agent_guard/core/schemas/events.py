@@ -3,11 +3,11 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """Ordered severity levels for detections and security events."""
 
     INFO = "info"
@@ -17,7 +17,7 @@ class Severity(str, Enum):
     CRITICAL = "critical"
 
 
-class Action(str, Enum):
+class Action(StrEnum):
     """Policy actions that can be applied to a guarded operation."""
 
     ALLOW = "allow"
@@ -27,7 +27,7 @@ class Action(str, Enum):
     QUARANTINE = "quarantine"
 
 
-class SourceClass(str, Enum):
+class SourceClass(StrEnum):
     """Provenance class of a memory write.
 
     Drives self-reinforcement detection and per-class policy decisions.
@@ -40,7 +40,7 @@ class SourceClass(str, Enum):
     UNKNOWN = "unknown"
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Classification of security events."""
 
     DETECTION = "detection"

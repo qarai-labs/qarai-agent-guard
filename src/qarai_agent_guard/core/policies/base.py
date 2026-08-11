@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Protocol
 
 from qarai_agent_guard.core.helpers.detection_utils import (
@@ -10,33 +9,7 @@ from qarai_agent_guard.core.helpers.detection_utils import (
 )
 from qarai_agent_guard.core.schemas.detection import DetectionResult
 from qarai_agent_guard.core.schemas.events import Action, Severity
-
-
-@dataclass(slots=True)
-class PolicyDecision:
-    """Outcome of evaluating detections against a policy.
-
-    Attributes:
-        action (Action): Policy action to apply.
-        reason (str): Human-readable explanation for the action.
-    """
-
-    action: Action
-    reason: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class SeverityRule:
-    """Mapping from one or more severities to a policy action.
-
-    Attributes:
-        severities (tuple[Severity, ...]): Severities covered by this rule.
-        action (Action): Action to take when the highest match severity is in
-            this set.
-    """
-
-    severities: tuple[Severity, ...]
-    action: Action
+from qarai_agent_guard.core.schemas.policy import PolicyDecision, SeverityRule
 
 
 class Policy(Protocol):

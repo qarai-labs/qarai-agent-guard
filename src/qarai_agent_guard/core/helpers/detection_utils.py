@@ -86,7 +86,11 @@ def highest_result_severity(result: DetectionResult) -> Severity | None:
         return match_severity
 
     metadata = getattr(result.model_detection_result, "metadata", {}) or {}
-    model_severity = metadata.get("max_severity")
+    # ``severity`` is the normalized model-output contract.  The metadata
+    # fallback preserves compatibility with detection results created by 0.x.
+    model_severity = getattr(
+        result.model_detection_result, "severity", None
+    ) or metadata.get("max_severity")
     if isinstance(model_severity, Severity):
         candidate_severities = [model_severity]
     elif isinstance(model_severity, str):
@@ -127,7 +131,7 @@ def highest_results_severity(
         for result in results
         if (severity := highest_result_severity(result)) is not None
     ]
-    
+
     if not severities:
         return None
     return max(

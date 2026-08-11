@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from qarai_agent_guard.core.detectors.models.schemas import ModelDetectionResult
+from qarai_agent_guard.core.schemas.models import ModelDetectionResult
 
 LANGUAGE_ALIASES: dict[str, str] = {
     "en": "en",
