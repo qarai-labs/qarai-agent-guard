@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 
 from qarai_agent_guard.core.exceptions import ConfigurationError, ModelLoadError
@@ -9,6 +10,8 @@ from qarai_agent_guard.core.models.providers import (
     ModelProviderFactory,
 )
 from qarai_agent_guard.core.schemas.models import ModelConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ModelLoader:
@@ -64,8 +67,15 @@ class ModelLoader:
         with self._lock:
             provider = self._cache.get(key)
             if provider is not None:
+                logger.debug("Reusing cached provider for model '%s'", config.model)
                 return provider
 
+            logger.info(
+                "Loading model '%s' via provider '%s' (task='%s')",
+                config.model,
+                config.provider.value,
+                config.task.value,
+            )
             try:
                 provider = ModelProviderFactory.create(config)
                 provider.load()
@@ -76,6 +86,7 @@ class ModelLoader:
                 ) from exc
 
             self._cache[key] = provider
+            logger.info("Model '%s' loaded and cached", config.model)
             return provider
 
     def release(self, config: ModelConfig) -> None:
@@ -93,6 +104,7 @@ class ModelLoader:
         if provider is None:
             return
 
+        logger.info("Releasing model '%s'", config.model)
         try:
             provider.unload()
         except Exception as exc:
@@ -108,6 +120,9 @@ class ModelLoader:
         with self._lock:
             providers = list(self._cache.values())
             self._cache.clear()
+
+        if providers:
+            logger.info("Unloading %d cached model provider(s)", len(providers))
 
         errors: list[Exception] = []
 

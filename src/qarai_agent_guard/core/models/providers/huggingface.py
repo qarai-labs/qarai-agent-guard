@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from qarai_agent_guard.core.exceptions import (
@@ -8,6 +9,8 @@ from qarai_agent_guard.core.exceptions import (
 )
 from qarai_agent_guard.core.models.providers.base import ModelProvider
 from qarai_agent_guard.core.schemas.models import ModelConfig, ModelTask
+
+logger = logging.getLogger(__name__)
 
 _TASK_TO_PIPELINE_NAME: dict[ModelTask, str] = {
     ModelTask.TEXT_CLASSIFICATION: "text-classification",
@@ -65,10 +68,19 @@ class HuggingFaceProvider(ModelProvider):
             if device is not None:
                 kwargs.setdefault("device", device)
 
+            logger.info(
+                "HuggingFaceProvider: loading model '%s' for task '%s'",
+                self.config.model,
+                pipeline_name,
+            )
             self._pipeline = pipeline(
                 task=pipeline_name,
                 model=self.config.model,
                 **kwargs,
+            )
+            logger.info(
+                "HuggingFaceProvider: model '%s' ready for inference",
+                self.config.model,
             )
 
         except ModelLoadError:
@@ -93,6 +105,7 @@ class HuggingFaceProvider(ModelProvider):
             raise ModelInferenceError(f"HuggingFace inference failed: {exc}") from exc
 
     def unload(self) -> None:
+        logger.info("HuggingFaceProvider: unloading model '%s'", self.config.model)
         self._pipeline = None
         try:
             import torch

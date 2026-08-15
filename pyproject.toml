@@ -132,3 +132,7 @@ select = [
 testpaths = [
     "tests",
 ]
+markers = [
+    "integration: tests that load real HuggingFace models (require --run-integration)",
+    "e2e: end-to-end tests running the full guard pipeline against real models",
+]
