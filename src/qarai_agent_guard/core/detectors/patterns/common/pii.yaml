@@ -9,6 +9,10 @@ rules:
     name: IBAN
     severity: medium
     pattern: '\b[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}\b'
+  - id: ssn_us
+    name: SSN (US)
+    severity: critical
+    pattern: '\b\d{3}-\d{2}-\d{4}\b'
   - id: email
     name: Email
     severity: low
