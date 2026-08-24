@@ -11,7 +11,7 @@ from crewai.hooks import (
 )
 from qarai_agent_guard import AgentGuard
 
-from qarai_agent_guard_crewai.AgentGuardAdapter import AgentGuardAdapter
+from qarai_agent_guard_crewai.agent_guard_adapter import AgentGuardAdapter
 from qarai_agent_guard_crewai.exceptions import (
     AgentGuardHookError,
     AgentGuardViolation,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from qarai_agent_guard import Action, PolicyDecision
 
-from qarai_agent_guard_crewai.AgentGuardAdapter import AgentGuardAdapter
+from qarai_agent_guard_crewai.agent_guard_adapter import AgentGuardAdapter
 from qarai_agent_guard_crewai.exceptions import AgentGuardViolation
 
 from .conftest import CLEAN_TEXT, PII_TEXT, PROMPT_INJECTION_TEXT, SECRET_TEXT

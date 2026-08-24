@@ -12,7 +12,7 @@ from crewai.hooks import (
 from crewai.hooks.llm_hooks import LLMCallHookContext
 from qarai_agent_guard import Action
 
-from qarai_agent_guard_crewai.AgentGuardAdapter import AgentGuardAdapter
+from qarai_agent_guard_crewai.agent_guard_adapter import AgentGuardAdapter
 from qarai_agent_guard_crewai.exceptions import (
     AgentGuardHookError,
     AgentGuardViolation,
