@@ -74,9 +74,13 @@ class AgentGuard:
                 ``execution_strategy`` hold unrecognised values, or if duplicate
                 detector names are registered.
         """
-        if not isinstance(detectors, list):
-            msg = f"detectors must be list, got {type(detectors).__name__}"
-            raise TypeError(msg)
+
+        if isinstance(detectors, Detector):
+            self.detectors = [detectors]
+        elif isinstance(detectors, list):
+            self.detectors = detectors
+        else:
+            raise TypeError(f"detectors must be a Detector or list of Detectors, got {type(detectors).__name__}")
 
         for index, detector in enumerate(detectors):
             if not isinstance(detector, Detector):
