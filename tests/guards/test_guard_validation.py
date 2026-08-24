@@ -11,9 +11,10 @@ from qarai_agent_guard.core.schemas.guard import (
 )
 
 
-def test_detectors_must_be_a_list():
-    with pytest.raises(TypeError, match="detectors must be list"):
-        AgentGuard(detectors=Detector(default_rules="pii"))
+def test_detectors_can_be_a_single_detector():
+    agent_guard = AgentGuard(detectors=Detector(default_rules="pii"))
+
+    assert agent_guard.detectors is not []
 
 
 def test_detectors_must_be_detector_instances():

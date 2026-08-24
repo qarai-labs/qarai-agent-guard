@@ -76,8 +76,8 @@ class AgentGuard:
         """
 
         if isinstance(detectors, Detector):
-            self.detectors = [detectors]
-        elif isinstance(detectors, list):
+            detectors = [detectors]
+        if isinstance(detectors, list):
             self.detectors = detectors
         else:
             raise TypeError(f"detectors must be a Detector or list of Detectors, got {type(detectors).__name__}")
