@@ -10,7 +10,6 @@ from qarai_agent_guard import (
     Action,
     AgentGuard,
     Detector,
-    ModelReasoningDetector,
     PolicyLoader,
     PolicyLoaderError,
     SecurityMode,
@@ -752,7 +751,14 @@ class TestRealLangChainAgent:
 
         fake_model = FakeListChatModel(responses=["Hello! How can I help you today?"])
         guard = AgentGuard(
-            detectors=[ModelReasoningDetector()], policy=default_policy()
+           detectors=[
+            Detector(
+                name="prompt_injection",
+                default_rules="prompt_injection",
+                detector_type="regex",
+            )
+        ],
+        policy=default_policy(),
         )
 
         agent = create_agent(

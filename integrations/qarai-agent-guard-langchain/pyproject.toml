@@ -71,6 +71,9 @@ cache-keys = [
     { git = { commit = true, tags = true } },
 ]
 
+[tool.uv.sources]
+qarai-agent-guard = { workspace = true }
+
 [tool.hatch.build.targets.wheel]
 packages = ["qarai_agent_guard_langchain"]
 

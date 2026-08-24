@@ -5,9 +5,7 @@ from crewai.hooks import clear_all_global_hooks
 from qarai_agent_guard import (
     Action,
     AgentGuard,
-    ModelReasoningDetector,
-    PIIDetector,
-    SecretsDetector,
+    Detector,
     Severity,
     SeverityPolicy,
     SeverityRule,
@@ -28,9 +26,9 @@ def guard() -> AgentGuard:
     """Default-policy guard with the three built-in detectors."""
     return AgentGuard(
         detectors=[
-            ModelReasoningDetector(lang="en"),
-            PIIDetector(),
-            SecretsDetector(),
+            Detector(name="prompt_injection", default_rules="prompt_injection"),
+            Detector(name="pii", default_rules="pii"),
+            Detector(name="secrets", default_rules="secrets"),
         ],
         policy=default_policy(),
     )
@@ -41,9 +39,9 @@ def strict_guard() -> AgentGuard:
     """Strict-policy guard — blocks medium severity and above."""
     return AgentGuard(
         detectors=[
-            ModelReasoningDetector(lang="en"),
-            PIIDetector(),
-            SecretsDetector(),
+            Detector(name="prompt_injection", default_rules="prompt_injection"),
+            Detector(name="pii", default_rules="pii"),
+            Detector(name="secrets", default_rules="secrets"),
         ],
         policy=strict_policy(),
     )
@@ -54,9 +52,9 @@ def quarantine_guard() -> AgentGuard:
     """Guard whose policy maps critical/high → QUARANTINE (not BLOCK)."""
     return AgentGuard(
         detectors=[
-            ModelReasoningDetector(lang="en"),
-            PIIDetector(),
-            SecretsDetector(),
+            Detector(name="prompt_injection", default_rules="prompt_injection"),
+            Detector(name="pii", default_rules="pii"),
+            Detector(name="secrets", default_rules="secrets"),
         ],
         policy=SeverityPolicy(
             name="quarantine-test",

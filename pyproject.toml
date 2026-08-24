@@ -90,6 +90,7 @@ cache-keys = [
 [tool.uv.workspace]
 members = [
     "integrations/qarai-agent-guard-crewai",
+    "integrations/qarai-agent-guard-langchain",
 ]
 
 

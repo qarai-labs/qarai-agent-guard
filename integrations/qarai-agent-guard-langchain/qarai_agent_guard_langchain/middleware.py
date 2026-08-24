@@ -11,6 +11,7 @@ from langchain_core.messages import (
 )
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from qarai_agent_guard import Action, AgentGuard
+from qarai_agent_guard.core.schemas.events import Severity, SourceClass
 
 from qarai_agent_guard_langchain.exceptions import AgentGuardViolation
 
@@ -103,12 +104,12 @@ class AgentGuardMiddleware(AgentMiddleware):
         if action == Action.WARN:
             self.guard._emit_event(
                 detector="middleware",
-                severity="medium",
+                severity=Severity.MEDIUM,
                 action=Action.WARN,
                 key=source,
                 message=decision.reason,
                 operation="middleware",
-                source_class="unknown",
+                source_class=SourceClass.UNKNOWN,
                 metadata={
                     "source": source,
                     "reason": decision.reason,
@@ -191,12 +192,15 @@ Reason:
                 operation="input",
             )
 
-            self._enforce_decision(
+            new_content = self._enforce_decision(
                 decision=decision,
                 content=content,
                 detections=detections,
                 source="model_input",
             )
+
+            if new_content != content:
+                message.content = new_content
 
         return None
 
@@ -284,12 +288,15 @@ Reason:
                 operation="tool_call",
             )
 
-            self._enforce_decision(
+            new_arguments = self._enforce_decision(
                 decision=decision,
                 content=arguments,
                 detections=detections,
                 source=f"tool_call:{tool_name}",
             )
+
+            if new_arguments != arguments:
+                request.tool_call["args"] = new_arguments
 
         result = handler(request)
 
