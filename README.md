@@ -17,8 +17,8 @@
 <!-- [![Wheel](https://img.shields.io/pypi/wheel/qarai-agent-guard.svg)](https://pypi.org/project/qarai-agent-guard/) -->
 <!-- [![Issues](https://img.shields.io/github/issues/qarai-labs/qarai-agent-guard)](https://github.com/qarai-labs/qarai-agent-guard/issues) -->
 
-</div>
 ---
+</div>
 
 ## Overview
 
