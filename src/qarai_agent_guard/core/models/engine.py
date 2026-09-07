@@ -12,6 +12,7 @@ from qarai_agent_guard.core.schemas.events import Severity
 from qarai_agent_guard.core.schemas.models import (
     ModelConfig,
     ModelDetectionResult,
+    ModelTask,
 )
 
 _POSITIVE_TEXT_MARKERS = ("true", "yes", "unsafe", "block", "malicious", "injection")
@@ -107,6 +108,11 @@ class DefaultOutputFormatter:
         if self._looks_like_text_classification(raw):
             return self._format_text_classification(raw, config)
 
+        if config.task is ModelTask.TOKEN_CLASSIFICATION and raw == []:
+            return ModelDetectionResult(
+                detected=False, score=0.0, severity=Severity.LOW
+            )
+
         if self._looks_like_token_classification(raw):
             return self._format_token_classification(raw, config)
 
@@ -171,7 +177,7 @@ class DefaultOutputFormatter:
 
     @staticmethod
     def _format_token_classification(
-        raw: list[dict[str, Any]], config: ModelConfig
+        raw: Any, config: ModelConfig
     ) -> ModelDetectionResult:
         scores: list[float] = []
         for item in raw:
@@ -194,7 +200,7 @@ class DefaultOutputFormatter:
 
     @staticmethod
     def _format_generation(
-        raw: list[dict[str, Any]], config: ModelConfig
+        raw: Any, config: ModelConfig
     ) -> ModelDetectionResult:
         text = str(raw[0].get("generated_text", "")).strip().lower()
 

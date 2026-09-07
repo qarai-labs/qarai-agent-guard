@@ -198,7 +198,10 @@ class Detector:
         self._language = normalize_language(lang)
         self._rule_strategy = rule_strategy
         self._combination_strategy = CombinationStrategy(combination_strategy)
-        self._model_config = model or resolve_default_model(self.default_rules)
+        if self.detector_type in (DetectorType.MODEL, DetectorType.MIXED):
+            self._model_config = model or resolve_default_model(self.default_rules)
+        else:
+            self._model_config = None
 
         if (
             self.detector_type in (DetectorType.MODEL, DetectorType.MIXED)

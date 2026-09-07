@@ -1,6 +1,12 @@
+from typing import Any, cast
+
 import pytest
 
-from qarai_agent_guard.core.exceptions import ConfigurationError, ModelOutputError
+from qarai_agent_guard.core.exceptions import (
+    ConfigurationError,
+    ModelFormatterError,
+    ModelOutputError,
+)
 from qarai_agent_guard.core.models.config import (
     _format_default_injection,
     _format_default_pii,
@@ -8,6 +14,7 @@ from qarai_agent_guard.core.models.config import (
 )
 from qarai_agent_guard.core.models.engine import (
     DefaultOutputFormatter,
+    InferenceEngine,
     _as_float,
     _severity_for_score,
 )
@@ -15,6 +22,7 @@ from qarai_agent_guard.core.models.loader import ModelLoader
 from qarai_agent_guard.core.schemas.events import Severity
 from qarai_agent_guard.core.schemas.models import (
     ModelConfig,
+    ModelDetectionResult,
     ModelTask,
 )
 
@@ -80,6 +88,84 @@ def test_default_formatter_supports_standard_huggingface_shapes(
 def test_default_formatter_rejects_unsupported_outputs(raw, injection_config):
     with pytest.raises(ModelOutputError):
         DefaultOutputFormatter().format(raw, injection_config)
+
+
+def test_default_formatter_accepts_empty_token_classification_output(pii_config):
+    result = DefaultOutputFormatter().format([], pii_config)
+
+    assert result.detected is False
+    assert result.score == 0.0
+    assert result.severity is Severity.LOW
+
+
+def test_custom_output_formatter_is_called_with_raw_output_and_config():
+    captured = {}
+
+    def formatter(raw, config):
+        captured["raw"] = raw
+        captured["config"] = config
+        return ModelDetectionResult(detected=True, score=0.8)
+
+    config = ModelConfig(
+        provider="huggingface",
+        model="test/model",
+        output_formatter=formatter,
+    )
+
+    class Provider:
+        def predict(self, text):
+            return {"custom": text}
+
+    class Loader:
+        def get(self, requested_config):
+            assert requested_config is config
+            return Provider()
+
+    result = InferenceEngine(cast(ModelLoader, Loader())).predict("payload", config)
+
+    assert result.detected is True
+    assert captured == {"raw": {"custom": "payload"}, "config": config}
+
+
+def test_custom_output_formatter_errors_are_wrapped():
+    def formatter(raw, config):
+        raise RuntimeError("formatter boom")
+
+    config = ModelConfig(
+        provider="huggingface",
+        model="test/model",
+        output_formatter=formatter,
+    )
+
+    class Provider:
+        def predict(self, text):
+            return object()
+
+    class Loader:
+        def get(self, requested_config):
+            return Provider()
+
+    with pytest.raises(ModelFormatterError, match="formatter boom"):
+        InferenceEngine(cast(ModelLoader, Loader())).predict("payload", config)
+
+
+def test_custom_output_formatter_must_return_model_detection_result():
+    config = ModelConfig(
+        provider="huggingface",
+        model="test/model",
+        output_formatter=cast(Any, lambda raw, config: {"detected": True}),
+    )
+
+    class Provider:
+        def predict(self, text):
+            return object()
+
+    class Loader:
+        def get(self, requested_config):
+            return Provider()
+
+    with pytest.raises(ModelFormatterError, match="must return ModelDetectionResult"):
+        InferenceEngine(cast(ModelLoader, Loader())).predict("payload", config)
 
 
 @pytest.mark.parametrize(

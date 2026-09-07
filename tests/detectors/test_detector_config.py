@@ -438,6 +438,7 @@ def test_regex_detector_with_default_rules_prompt_injection_has_no_model_config(
     detector = Detector(default_rules="prompt_injection")
 
     assert detector._model_engine is None
+    assert detector._model_config is None
 
 
 @pytest.mark.parametrize(
