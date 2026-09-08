@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - docs/create-mkdocs-documentation
   workflow_dispatch:
 
 permissions:
