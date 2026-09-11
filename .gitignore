@@ -11,3 +11,6 @@ wheels/
 .venv
 env
 venv
+
+# Documentation
+site/

@@ -1,0 +1,14 @@
+site_name: Qarai Agent Guard
+site_description: A lightweight toolkit for securing AI agents
+site_author: Qarai
+
+nav:
+  - Home: index.md
+  - Architecture & Core Concepts: architecture.md
+  - Examples & Recipes: examples.md
+  - Policies and Actions : policy.md
+  - Detection Patterns: detection-patterns.md
+  - Security Modes & Runtime Behaviour: security-mode-runtime-behaviour.md
+
+theme:
+  name: readthedocs
