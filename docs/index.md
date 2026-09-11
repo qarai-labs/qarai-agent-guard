@@ -47,12 +47,8 @@ print(result)
 Use the navigation menu to explore:
 
 - [Architecture & Core Concepts](architecture.md)
-- [AgentGuard](agent-guard.md)
-- [Detectors](detectors.md)
-- [Detection Patterns](detection-patterns.md)
-- [Policies & Actions](policies.md)
-- [Runtime Security](runtime-security.md)
-- [Error Handling](error-handling.md)
-- [Framework Integrations](integrations.md)
 - [Examples & Recipes](examples.md)
-- [Development & Contributing](development.md)
+- [Policies and Actions](policy.md)
+- [Detection Patterns](detection-patterns.md)
+- [Security Modes & Runtime Behaviour](security-mode-runtime-behaviour.md)
+

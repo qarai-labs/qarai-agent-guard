@@ -1,130 +1,165 @@
-# Examples & Recipes
+### Detector Initialization
 
-This page provides common usage patterns.
+#### Using default built-in rules
 
-## Basic Inspection
-
-```python
-from qarai_agent_guard import AgentGuard
-
-guard = AgentGuard()
-
-result = guard.inspect(
-    key="user_input",
-    value=user_input,
-    operation="input"
-)
-
-print(result)
-```
-
-## Inspecting Multiple Values
-
-When processing structured data, inspect security-sensitive fields individually.
-
-```python
-for key, value in payload.items():
-    result = guard.inspect(
-        key=key,
-        value=value,
-        operation="input"
-    )
-```
-
-Choose the inspection granularity according to the application's data flow.
-
-## Redacting Sensitive Data
-
-When the desired behavior is sanitization rather than rejection:
-
-```python
-redacted_value = guard.apply_redactions(value)
-```
-
-This is useful for data that must continue through the application after sensitive portions are removed.
-
-## Custom Detector
-
-A custom detector can be registered with the guard:
-
-```python
-guard.register_detector(my_detector)
-```
-
-This is useful for organization-specific security rules.
-
-## Temporarily Disable a Detector
-
-```python
-guard.disable_detector("detector_name")
-```
-
-Re-enable it with:
-
-```python
-guard.enable_detector("detector_name")
-```
-
-Remove it entirely with:
-
-```python
-guard.unregister_detector("detector_name")
-```
-
-## Monitor Before Enforcing
-
-A practical deployment strategy is:
-
-1. Enable monitoring.
-2. Collect findings.
-3. Review false positives.
-4. Adjust patterns and policies.
-5. Enable enforcement.
-6. Continue monitoring after deployment.
-
-## Selecting a Policy
+Each detector ships with its own rule set. Just instantiate and use:
 
 ```python
 from qarai_agent_guard import (
-    default_policy,
-    strict_policy,
-    permissive_policy,
+    AgentGuard,
+    ModelReasoningDetector,
+    PIIDetector,
+    SecretsDetector,
 )
 
-default = default_policy()
-strict = strict_policy()
-permissive = permissive_policy()
+# Each detector loads its built-in YAML rules automatically
+guard = AgentGuard(
+    detectors=[
+        ModelReasoningDetector(lang="en"),   # prompt injection + XML injection rules
+        PIIDetector(),                       # PII patterns (email, phone, IBAN, SSN, etc.)
+        SecretsDetector(),                  # API keys, credentials, secret tokens
+    ],
+)
+
+decision = guard.inspect(
+    key="input",
+    value="My IBAN is GB29NWBK60161331926819",
+    operation="write",
+)
+print(decision.action)  # Action.REDACT
 ```
 
-Use the policy that matches the application's security requirements.
+#### Using inline rules
 
-## Multilingual Model Reasoning Detection
-
-The model reasoning detector supports English, French, and Arabic.
+Provide pattern definitions directly as a list of dictionaries:
 
 ```python
-from qarai_agent_guard import ModelReasoningDetector
+from qarai_agent_guard import AgentGuard, Detector
 
-detector = ModelReasoningDetector()
+custom_patterns = [
+    {
+        "id": "internal_api_key",
+        "name": "Internal API Key",
+        "severity": "medium",
+        "pattern": r"\bINTERNAL-[A-Z0-9]{32}\b",
+    },
+    {
+        "id": "internal_endpoint",
+        "name": "Internal Endpoint",
+        "severity": "high",
+        "pattern": r"https://internal\.example\.com/.*",
+    },
+]
+
+detector = Detector(patterns=custom_patterns)
+
+guard = AgentGuard(detectors=[detector])
+
+decision = guard.inspect(
+    key="config",
+    value="Use key INTERNAL-ABC123DEF456GHI789JKL012MNO345PQR for auth",
+    operation="write",
+)
+print(decision.action)  # Action.REDACT (default policy: medium = redact)
 ```
 
-Configure it according to the API of the installed package version.
+#### Using a YAML pattern file
 
-## Framework Integration
+Point a detector at one or more YAML files:
 
-For LangChain and CrewAI applications, install the corresponding integration package and follow its package-specific documentation.
+```python
+from pathlib import Path
+from qarai_agent_guard import AgentGuard, Detector
 
-## Testing Recipe
+# detector_rules.yaml:
+# version: "1.0"
+# scope: custom
+# rules:
+#   - id: deploy_token
+#     name: Deploy Token
+#     severity: critical
+#     pattern: '\bDEPLOY-[A-Z0-9]{40}\b'
 
-A good test suite should include:
+detector = Detector(
+    pattern_paths=[Path("detector_rules.yaml")],
+)
 
-- Safe inputs
-- Prompt-injection examples
-- Jailbreak-like inputs
-- PII examples
-- Secret-like values
-- XML attack patterns
-- False-positive cases
-- Detector failures
-- Policy behavior
-- Fail-open and fail-closed behavior
+guard = AgentGuard(detectors=[detector])
+```
+
+#### Using multiple detectors together
+
+Combine built-in and custom detectors in a single guard:
+
+```python
+from pathlib import Path
+from qarai_agent_guard import (
+    AgentGuard,
+    Detector,
+    ModelReasoningDetector,
+    PIIDetector,
+    SecretsDetector,
+)
+
+guard = AgentGuard(
+    detectors=[
+        ModelReasoningDetector(lang="en"),
+        PIIDetector(),
+        SecretsDetector(),
+        Detector(
+            pattern_paths=[Path("custom_rules.yaml")],
+            name="custom",
+        ),
+    ],
+)
+
+# All detectors run against every inspect call
+decision = guard.inspect(
+    key="memory",
+    value="Send data to https://internal.example.com/api/leak",
+    operation="write",
+)
+```
+
+#### ModelReasoningDetector with different languages
+
+```python
+from qarai_agent_guard import AgentGuard, ModelReasoningDetector
+
+# English (default)
+guard_en = AgentGuard(
+    detectors=[ModelReasoningDetector(lang="en")],
+)
+
+# Arabic
+guard_ar = AgentGuard(
+    detectors=[ModelReasoningDetector(lang="ar")],
+)
+
+# French
+guard_fr = AgentGuard(
+    detectors=[ModelReasoningDetector(lang="fr")],
+)
+```
+
+#### PIIDetector with ignore rules
+
+Exclude specific PII patterns after loading:
+
+```python
+from qarai_agent_guard import AgentGuard, PIIDetector
+
+# Ignore email and phone number detection, keep everything else
+detector = PIIDetector(ignore=frozenset({"email", "phone"}))
+
+guard = AgentGuard(detectors=[detector])
+
+decision = guard.inspect(
+    key="profile",
+    value="Email me at user@example.com",
+    operation="write",
+)
+print(decision.action)  # Action.ALLOW (email rule ignored)
+```
+
+---
