@@ -1,16 +1,24 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Any
+from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from qarai_agent_guard import AgentGuard, Detector
-from qarai_agent_guard.core.schemas import DetectionResult
+from qarai_agent_guard.core.models.config import _format_default_api
+from qarai_agent_guard.core.schemas import DetectionResult, ModelConfig
 
 IBAN_SAMPLE = "FR1420041010050500013M02606"
 CARD_SAMPLE = "4111 1111 1111 1111"
 AWS_KEY_SAMPLE = "AKIAIOSFODNN7EXAMPLE"
 EMAIL_SAMPLE = "jhon.smith@google.com"
+
+API_BASE_URL = "https://openrouter.ai/api/v1"
+API_CLIENT_TARGET = "qarai_agent_guard.core.models.providers.api.httpx.Client"
+API_SYSTEM_PROMPT = "Answer `safe` or `unsafe`."
 
 IBAN_PAYLOAD = f"Please store IBAN {IBAN_SAMPLE} on file for client Amine Trabelsi."
 CARD_PAYLOAD = f"Cardholder Yassine Gharbi paid with card {CARD_SAMPLE}."
@@ -192,3 +200,117 @@ def broken_policy_factory():
         return BrokenPolicy()
 
     return _make
+
+
+# API provider fixtures
+
+
+@pytest.fixture
+def api_model_config():
+    """Provides a factory for user-supplied API model configurations."""
+
+    def _make(**overrides: Any) -> ModelConfig:
+        kwargs: dict[str, Any] = {
+            "provider": "api",
+            "model": "gpt-oss-120b",
+            "api_key": "test-key",
+            "model_options": {
+                "endpoint": API_BASE_URL,
+                "messages": [{"role": "system", "content": API_SYSTEM_PROMPT}],
+            },
+            "output_formatter": _format_default_api,
+        }
+        kwargs.update(overrides)
+        return ModelConfig(**kwargs)
+
+    return _make
+
+
+@pytest.fixture
+def api_detector(api_model_config):
+    """Provides a factory for model-only detectors backed by the API provider."""
+
+    def _make(name: str = "api_injection") -> Detector:
+        return Detector(
+            name=name,
+            detector_type="model",
+            default_rules="prompt_injection",
+            provider="api",
+            model=api_model_config(),
+        )
+
+    return _make
+
+
+@pytest.fixture
+def api_response():
+    """Provides a factory for chat-completions responses."""
+
+    def _make(
+        status_code: int = 200,
+        payload: Any | None = None,
+        headers: dict[str, str] | None = None,
+        text: str = "",
+    ) -> httpx.Response:
+        request = httpx.Request("POST", f"{API_BASE_URL}/chat/completions")
+
+        if payload is not None and not text:
+            return httpx.Response(
+                status_code,
+                json=payload,
+                headers=headers or {},
+                request=request,
+            )
+
+        return httpx.Response(
+            status_code,
+            text=text,
+            headers=headers or {},
+            request=request,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def api_verdict_response(api_response):
+    """Provides a factory for successful responses carrying a verdict word."""
+
+    def _make(verdict: str = "safe") -> httpx.Response:
+        return api_response(payload={"choices": [{"message": {"content": verdict}}]})
+
+    return _make
+
+
+@pytest.fixture
+def api_error_response(api_response):
+    """Provides a factory for failed responses."""
+
+    def _make(
+        status_code: int = 500,
+        text: str = "upstream failure",
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        return api_response(status_code=status_code, text=text, headers=headers)
+
+    return _make
+
+
+@pytest.fixture
+def patched_api_client():
+    """Provides a factory patching the HTTP client used by the API provider."""
+
+    @contextmanager
+    def _patch(
+        response: httpx.Response | None = None,
+        side_effect: Exception | None = None,
+    ):
+        instance = MagicMock()
+        instance.post.return_value = response
+        instance.post.side_effect = side_effect
+
+        with patch(API_CLIENT_TARGET) as mock_client:
+            mock_client.return_value = instance
+            yield instance
+
+    return _patch

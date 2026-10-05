@@ -96,6 +96,8 @@ The detector also provides redaction:
 
 Detectors are plain rule engines by default.
 They can use a model for inference.
+A model runs on the HuggingFace Hub or on a remote OpenAI-compatible API.
+A remote model adds a network call to each inspection.
 See [Detectors](detectors.md) and [Model-Based Detection](models.md).
 
 ### Policy
@@ -204,6 +206,7 @@ See [Detection Patterns](patterns.md).
 The library raises typed exceptions.
 `GuardError` is the base class.
 Loader errors are `ValueError` subclasses.
+A model provider error becomes a `DetectorExecutionError` inside the guard.
 
 See [Exceptions](exceptions.md).
 

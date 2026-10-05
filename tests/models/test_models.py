@@ -8,12 +8,14 @@ from qarai_agent_guard.core.exceptions import (
     ModelOutputError,
 )
 from qarai_agent_guard.core.models import (
+    APIProvider,
     DefaultOutputFormatter,
     InferenceEngine,
     ModelLoader,
     resolve_default_model,
 )
 from qarai_agent_guard.core.models.config import (
+    _format_default_api,
     _format_default_injection,
     _format_default_pii,
 )
@@ -24,6 +26,7 @@ from qarai_agent_guard.core.models.engine import (
 from qarai_agent_guard.core.schemas import (
     ModelConfig,
     ModelDetectionResult,
+    ModelProviderName,
     ModelTask,
     Severity,
 )
@@ -187,6 +190,100 @@ def test_default_pii_formatter_preserves_qualifying_entities(pii_config):
         pii_config,
     )
     assert result.detected and result.entities[0]["entity_group"] == "EMAIL"
+
+
+def test_api_prompt_injection_default_model_is_resolved():
+    config = resolve_default_model("prompt_injection", provider="api")
+
+    assert config is not None
+    assert config.provider is ModelProviderName.API
+    assert config.output_formatter is _format_default_api
+    assert config.model_options is not None
+    assert config.model_options["endpoint"] == "https://openrouter.ai/api/v1"
+    messages = config.model_options["messages"]
+    assert len(messages) == 1
+    assert messages[0]["role"] == "system"
+    assert "unsafe" in messages[0]["content"]
+    assert "`safe`" in messages[0]["content"]
+    assert config.inference_options == {"temperature": 0.0, "max_tokens": 256}
+
+
+def test_api_default_model_is_loaded_by_the_api_provider():
+    config = resolve_default_model("prompt_injection", provider="api")
+    assert config is not None
+
+    config = ModelConfig(
+        provider="api",
+        model=config.model,
+        api_key="test-key",
+        model_options=config.model_options,
+        inference_options=config.inference_options,
+        output_formatter=config.output_formatter,
+    )
+    provider = APIProvider(config)
+    provider.load()
+
+    assert provider._endpoint == "https://openrouter.ai/api/v1/chat/completions"
+    provider.unload()
+
+
+@pytest.mark.parametrize("rule", ["pii", "secrets"])
+def test_rules_without_api_default_model_return_none(rule):
+    assert resolve_default_model(rule, provider="api") is None
+
+
+@pytest.mark.parametrize(
+    ("raw", "detected", "score"),
+    [
+        ("safe", False, 0.0),
+        ("unsafe", True, 1.0),
+        (" UNSAFE ", True, 1.0),
+        ("Safe", False, 0.0),
+    ],
+)
+def test_default_api_formatter_accepts_supported_verdicts(raw, detected, score):
+    result = _format_default_api(raw, cast(ModelConfig, None))
+
+    assert result.detected is detected
+    assert result.score == score
+    assert result.metadata == {"verdict": raw.strip().casefold()}
+    assert result.severity is (Severity.CRITICAL if detected else Severity.LOW)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "",
+        "   ",
+        "maybe",
+        "safe unsafe",
+        "**unsafe**",
+        "unsafe.",
+        'Label: "unsafe"',
+        None,
+        42,
+        {"label": "unsafe"},
+    ],
+)
+def test_default_api_formatter_rejects_any_other_output(raw):
+    with pytest.raises(ModelOutputError, match="must answer exactly"):
+        _format_default_api(raw, cast(ModelConfig, None))
+
+
+def test_default_api_formatter_errors_are_not_wrapped_by_the_engine():
+    config = resolve_default_model("prompt_injection", provider="api")
+    assert config is not None
+
+    class Provider:
+        def predict(self, text):
+            return "I cannot answer that."
+
+    class Loader:
+        def get(self, requested_config):
+            return Provider()
+
+    with pytest.raises(ModelOutputError, match="must answer exactly"):
+        InferenceEngine(cast(ModelLoader, Loader())).predict("payload", config)
 
 
 def test_loader_key_shares_default_model_across_detection_options(injection_config):

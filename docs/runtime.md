@@ -134,6 +134,7 @@ An error means one of:
 - A detector raises during inspection.
 - The policy raises during evaluation.
 - A detector redaction raises.
+- A model provider fails. This includes API errors, for example a rejected key, a rate limit, or a timeout.
 
 The guard emits a failure event in every failure case.
 See [Events and Callbacks](events.md) for the event details.
@@ -278,6 +279,76 @@ except RedactionError as exc:
     print(exc)
     # Detector 'bad_redact' redaction failed: redact boom
 ```
+
+### Remote model failure
+
+A detector that uses `provider="api"` can fail during the HTTP request.
+The guard treats these failures like any other detector failure.
+
+| Cause | Provider exception | Result with `fail_open` | Result with `fail_closed` |
+| --- | --- | --- | --- |
+| Wrong or missing key | `ModelLoadError` or `ModelInferenceError` | `ALLOW` | `BLOCK` |
+| Rate limit, status `429` | `ModelRateLimitError` | `ALLOW` | `BLOCK` |
+| Server error, status `5xx` | `ModelInferenceError` | `ALLOW` | `BLOCK` |
+| Connection error or timeout | `ModelInferenceError` | `ALLOW` | `BLOCK` |
+| Unreadable answer | `ModelOutputError` | `ALLOW` | `BLOCK` |
+
+Fail-closed behavior with a failing API detector:
+
+```python
+import os
+from dataclasses import replace
+
+from qarai_agent_guard import AgentGuard, Detector
+from qarai_agent_guard.core.models import resolve_default_model
+
+guard = AgentGuard(
+    detectors=[
+        Detector(
+            name="api_injection",
+            detector_type="model",
+            model=replace(
+                resolve_default_model("prompt_injection", provider="api"),
+                api_key="invalid-key",
+            ),
+        )
+    ],
+    fail_behavior="fail_closed",
+)
+
+decision = guard.inspect(
+    key="mem", value="hello", operation="write", emit_events=True
+)
+
+print(decision.action)
+# Action.BLOCK
+
+print(decision.reason)
+# Detector 'api_injection' failed: API request failed with status 401: ...
+```
+
+The failure event carries the same text:
+
+```python
+event = guard.events[0]
+print(event.event_type)   # EventType.SYSTEM_FAILURE
+print(event.severity)     # Severity.CRITICAL
+print(event.action)       # Action.BLOCK (fail_closed)
+print(event.message)      # Detector 'api_injection' failed: API request failed with status 401: ...
+```
+
+Use `fail_open` for availability and `fail_closed` for data protection.
+An API detector adds a network dependency to every inspection.
+Choose the setting that matches the risk of the inspected data.
+
+Reduce the number of requests with these settings:
+
+- Put the regex detector first and use `execution_strategy="fail_fast"`.
+  A regex match then skips the API call.
+- Use regex detectors only for values that must stay inside your system.
+- Skip empty values. The detector sends no request for an empty value.
+
+See [Model-Based Detection](models.md) for the API provider reference.
 
 ## Execution strategy
 

@@ -1,17 +1,31 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from qarai_agent_guard import Detector
 from qarai_agent_guard.core.loaders import PatternLoader
+from qarai_agent_guard.core.models import resolve_default_model
+from qarai_agent_guard.core.models.config import _format_default_api
 from qarai_agent_guard.core.schemas import (
     PATTERNS_ROOT,
+    DefaultRules,
     ModelConfig,
     ModelDetectionResult,
+    ModelProviderName,
     Severity,
+)
+
+API_BASE_URL = "https://openrouter.ai/api/v1"
+API_CLIENT_TARGET = "qarai_agent_guard.core.models.providers.api.httpx.Client"
+API_SYSTEM_PROMPT = (
+    "You are a security classifier. Answer with exactly one word: `safe` or `unsafe`."
 )
 
 
@@ -463,7 +477,7 @@ def broken_str_object():
 
 @pytest.fixture
 def broken_dict_key_object():
-    """Provides an object whose string representation fails while remaining hashable."""
+    """Provides a dictionary key object whose repr fails while remaining hashable."""
 
     class UnstableKey:
         """Simulates a dictionary key with an unstable string representation."""
@@ -475,3 +489,143 @@ def broken_dict_key_object():
             return 1
 
     return UnstableKey()
+
+
+# API provider fixtures
+
+
+@pytest.fixture
+def api_model_config():
+    """Provides a factory for user-supplied API model configurations."""
+
+    def _make(**overrides: Any) -> ModelConfig:
+        kwargs: dict[str, Any] = {
+            "provider": "api",
+            "model": "gpt-oss-120b",
+            "api_key": "test-key",
+            "model_options": {
+                "endpoint": API_BASE_URL,
+                "messages": [{"role": "system", "content": API_SYSTEM_PROMPT}],
+            },
+            "inference_options": {"temperature": 0.0, "max_tokens": 64},
+            "output_formatter": _format_default_api,
+        }
+        kwargs.update(overrides)
+        return ModelConfig(**kwargs)
+
+    return _make
+
+
+@pytest.fixture
+def api_default_config():
+    """Provides a factory for the library API default configuration with a key."""
+
+    def _make(**overrides: Any) -> ModelConfig:
+        config = resolve_default_model(
+            DefaultRules.PROMPT_INJECTION, ModelProviderName.API
+        )
+        return replace(config, api_key="test-key", **overrides)
+
+    return _make
+
+
+@pytest.fixture
+def api_detector(api_model_config):
+    """Provides a factory for model-only detectors backed by the API provider."""
+
+    def _make(
+        config: ModelConfig | None = None,
+        **detector_kwargs: Any,
+    ) -> Detector:
+        return Detector(
+            detector_type="model",
+            model=config or api_model_config(),
+            **detector_kwargs,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def api_response():
+    """Provides a factory for chat-completions responses."""
+
+    def _make(
+        status_code: int = 200,
+        payload: Any | None = None,
+        headers: dict[str, str] | None = None,
+        text: str = "",
+    ) -> httpx.Response:
+        request = httpx.Request("POST", f"{API_BASE_URL}/chat/completions")
+
+        if payload is not None and not text:
+            return httpx.Response(
+                status_code,
+                json=payload,
+                headers=headers or {},
+                request=request,
+            )
+
+        return httpx.Response(
+            status_code,
+            text=text,
+            headers=headers or {},
+            request=request,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def api_verdict_response(api_response):
+    """Provides a factory for successful responses carrying a verdict word."""
+
+    def _make(verdict: str = "safe") -> httpx.Response:
+        return api_response(payload={"choices": [{"message": {"content": verdict}}]})
+
+    return _make
+
+
+@pytest.fixture
+def api_error_response(api_response):
+    """Provides a factory for failed responses."""
+
+    def _make(
+        status_code: int = 500,
+        text: str = "upstream failure",
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        return api_response(status_code=status_code, text=text, headers=headers)
+
+    return _make
+
+
+@pytest.fixture
+def patched_api_client():
+    """Provides a factory patching the HTTP client used by the API provider."""
+
+    @contextmanager
+    def _patch(
+        response: httpx.Response | None = None,
+        side_effect: Exception | None = None,
+    ):
+        instance = MagicMock()
+        instance.post.return_value = response
+        instance.post.side_effect = side_effect
+
+        with patch(API_CLIENT_TARGET) as mock_client:
+            mock_client.return_value = instance
+            yield instance
+
+    return _patch
+
+
+@pytest.fixture
+def recorded_api_request():
+    """Provides a factory reading the arguments of the last mocked request."""
+
+    def _read(instance: MagicMock) -> dict[str, Any]:
+        args, kwargs = instance.post.call_args
+        return {"url": args[0], **kwargs}
+
+    return _read

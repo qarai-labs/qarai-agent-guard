@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from qarai_agent_guard.core.exceptions import ModelProviderError
+from qarai_agent_guard.core.models.providers.api import APIProvider
 from qarai_agent_guard.core.models.providers.base import ModelProvider
 from qarai_agent_guard.core.models.providers.huggingface import HuggingFaceProvider
 from qarai_agent_guard.core.schemas.models import ModelConfig, ModelProviderName
@@ -16,5 +17,8 @@ class ModelProviderFactory:
 
         if config.provider is ModelProviderName.HUGGINGFACE:
             return HuggingFaceProvider(config)
+
+        if config.provider is ModelProviderName.API:
+            return APIProvider(config)
 
         raise ModelProviderError(f"Unsupported model provider: {config.provider}")

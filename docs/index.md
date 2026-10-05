@@ -21,6 +21,11 @@ The library supports three detection modes:
 - Model-based detection
 - Mixed detection
 
+Model-based detection works with two model providers:
+
+- Local or Hub models on HuggingFace
+- Remote OpenAI-compatible API endpoints
+
 The library ships detection rules for three languages:
 
 - English
@@ -118,7 +123,7 @@ Read the pages in this order:
 | [Architecture & Core Concepts](architecture.md) | The design of the library. |
 | [Agent Guard](agent-guard.md) | The `AgentGuard` engine, its parameters, and its methods. |
 | [Detectors](detectors.md) | The `Detector` class, all detection modes, and rule resolution. |
-| [Model-Based Detection](models.md) | `ModelConfig`, providers, tasks, and output formatters. |
+| [Model-Based Detection](models.md) | `ModelConfig`, HuggingFace and API providers, tasks, and output formatters. |
 | [Policies and Actions](policy.md) | Severities, actions, built-in policies, and custom policies. |
 | [Detection Patterns](patterns.md) | The pattern file format and the built-in rule sets. |
 | [Security Modes & Runtime Behaviour](runtime.md) | Security modes, fail behavior, and execution strategy. |
@@ -139,6 +144,7 @@ Use these terms with their exact meaning throughout this documentation:
 | Pattern | The regex expression inside a rule. |
 | Match | A rule that found a hit in the value. |
 | Detection | A matched rule or a model detection. |
+| Provider | The place where a model runs: `"huggingface"` or `"api"`. |
 | Severity | The importance of a match. |
 | Action | The guard response to a severity. |
 | Decision | The policy outcome for a set of detections. |

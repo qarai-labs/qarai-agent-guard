@@ -18,6 +18,10 @@ class ModelInferenceError(ModelProviderError):
     """Raised when model inference fails."""
 
 
+class ModelRateLimitError(ModelInferenceError):
+    """Raised when a remote API rejects a request with HTTP 429."""
+
+
 class ModelOutputError(ModelProviderError):
     """Raised when the model produces invalid output."""
 
@@ -64,6 +68,7 @@ __all__ = [
     "ModelLoadError",
     "ModelOutputError",
     "ModelProviderError",
+    "ModelRateLimitError",
     "PatternLoaderError",
     "PolicyEvaluationError",
     "PolicyLoaderError",
