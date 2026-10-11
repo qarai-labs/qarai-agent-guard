@@ -3,7 +3,12 @@ from __future__ import annotations
 import pytest
 
 from qarai_agent_guard import AgentGuard, Detector
-from qarai_agent_guard.core.schemas import Action, SourceClass
+from qarai_agent_guard.core.schemas import (
+    Action,
+    EventType,
+    Severity,
+    SourceClass,
+)
 
 from .conftest import (
     AR_PROMPT_INJECTION_PAYLOAD,
@@ -259,3 +264,95 @@ def test_inspect_stringifies_structured_values(agent_guard):
         operation="write",
     )
     assert decision.action == Action.BLOCK
+
+
+# Model detection through the API provider
+
+
+@pytest.mark.parametrize(
+    ("verdict", "expected_action"),
+    [("unsafe", Action.BLOCK), ("safe", Action.ALLOW)],
+)
+def test_guard_applies_the_policy_to_the_api_verdict(
+    verdict,
+    expected_action,
+    api_detector,
+    api_verdict_response,
+    patched_api_client,
+):
+    """Maps the API verdict to the same policy actions as a regex detector."""
+    guard = AgentGuard(detectors=[api_detector()])
+
+    with patched_api_client(api_verdict_response(verdict)):
+        decision = guard.inspect(
+            key="memory",
+            value=PROMPT_INJECTION_PAYLOAD,
+            operation="write",
+        )
+
+    assert decision.action == expected_action
+
+
+def test_guard_reports_the_api_detection_with_results(
+    api_detector,
+    api_verdict_response,
+    patched_api_client,
+):
+    """Exposes the API detection, including model metadata, to the caller."""
+    guard = AgentGuard(detectors=[api_detector()])
+
+    with patched_api_client(api_verdict_response("unsafe")):
+        decision, detections = guard.inspect_with_results(
+            key="memory",
+            value=PROMPT_INJECTION_PAYLOAD,
+            operation="write",
+        )
+
+    assert decision.action == Action.BLOCK
+    assert len(detections) == 1
+    assert detections[0].detector == "api_injection"
+    assert detections[0].model_detection_result.detected is True
+    assert detections[0].metadata["model"] == {
+        "provider": "api",
+        "name": "gpt-oss-120b",
+        "score": 1.0,
+        "severity": "critical",
+    }
+
+
+def test_guard_skips_the_api_call_for_an_empty_value(
+    api_detector,
+    api_verdict_response,
+    patched_api_client,
+):
+    """Allows an empty value without calling the API."""
+    guard = AgentGuard(detectors=[api_detector()])
+
+    with patched_api_client(api_verdict_response("unsafe")) as instance:
+        decision = guard.inspect(key="memory", value="", operation="write")
+
+    assert decision.action == Action.ALLOW
+    instance.post.assert_not_called()
+
+
+def test_guard_emits_a_detection_event_for_the_api_verdict(
+    api_detector,
+    api_verdict_response,
+    patched_api_client,
+):
+    """Emits a detection event carrying the API severity and policy action."""
+    guard = AgentGuard(detectors=[api_detector()])
+
+    with patched_api_client(api_verdict_response("unsafe")):
+        guard.inspect(
+            key="memory",
+            value=PROMPT_INJECTION_PAYLOAD,
+            operation="write",
+            emit_events=True,
+        )
+
+    events = [e for e in guard.events if e.event_type == EventType.DETECTION]
+    assert len(events) == 1
+    assert events[0].detector == "api_injection"
+    assert events[0].severity == Severity.CRITICAL
+    assert events[0].action == Action.BLOCK

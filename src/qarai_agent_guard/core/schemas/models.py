@@ -12,6 +12,7 @@ from qarai_agent_guard.core.schemas.events import Severity
 
 class ModelProviderName(StrEnum):
     HUGGINGFACE = "huggingface"
+    API = "api"
 
 
 class ModelTask(StrEnum):
@@ -49,7 +50,8 @@ class ModelConfig:
     Parameters
     ----------
     provider:
-        Model hosting provider. Currently supports only ``"huggingface"``.
+        Model hosting provider. Accepts a :class:`ModelProviderName` value or
+        its string equivalent (``"huggingface"`` or ``"api"``).
     model:
         Model identifier (e.g. a HuggingFace Hub repo name or local path).
     task:
@@ -62,17 +64,22 @@ class ModelConfig:
     hf_access_token:
         Optional HuggingFace Hub access token for private models.
     api_key:
-        Optional API key (reserved for future providers).
+        Optional API key for API providers (e.g. OpenRouter, OpenAI-compatible).
     output_formatter:
         Optional callable ``(raw_output, config) -> ModelDetectionResult``.
         It converts the provider's raw output into a detection result.
     model_options:
-        Keyword arguments for ``AutoModel*.from_pretrained()``.
+        Provider load options. For ``"huggingface"`` these are keyword
+        arguments for ``AutoModel*.from_pretrained()``. For ``"api"`` they
+        accept only ``endpoint`` and ``messages`` (both required), plus
+        optional ``headers`` and ``timeout``.
     tokenizer_options:
         Keyword arguments for ``AutoTokenizer.from_pretrained()``.
     inference_options:
         Keyword arguments for the model's ``__call__`` / ``generate``
-        invocation at inference time.
+        invocation at inference time. For ``"api"`` these accept only
+        ``temperature``, ``max_tokens``, ``top_p``, ``frequency_penalty``,
+        ``presence_penalty`` and ``response_format``.
     options:
         *Deprecated.* Use ``inference_options`` instead.
         Values migrate to ``inference_options`` automatically during
@@ -104,7 +111,8 @@ class ModelConfig:
         try:
             object.__setattr__(self, "provider", ModelProviderName(self.provider))
         except (TypeError, ValueError) as exc:
-            raise ConfigurationError("provider must be one of: huggingface") from exc
+            valid = ", ".join(f'"{p.value}"' for p in ModelProviderName)
+            raise ConfigurationError(f"provider must be one of: {valid}") from exc
 
         if not isinstance(self.model, str) or not self.model.strip():
             raise ConfigurationError("model must be a non-empty string")

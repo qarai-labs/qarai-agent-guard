@@ -14,3 +14,5 @@ venv
 
 # Documentation
 site/
+
+.env

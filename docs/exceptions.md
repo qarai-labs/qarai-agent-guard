@@ -11,6 +11,7 @@ GuardError
 ├── ModelProviderError
 │   ├── ModelLoadError
 │   ├── ModelInferenceError
+│   │   └── ModelRateLimitError
 │   ├── ModelOutputError
 │   └── ModelFormatterError
 ├── DetectorExecutionError
@@ -45,8 +46,17 @@ Raised when configuration is invalid:
 - The detector has no rules and no model.
 - The detector needs a model but has none.
 - `ModelConfig` fields are invalid.
+- The detector `provider` is not `"huggingface"` or `"api"`.
+- The detector `provider` does not match `model.provider`.
+- The requested provider has no default model for the rule set.
+- An API `model_options` or `inference_options` value is invalid.
+- An API configuration has invalid connection or request options.
 
 `ConfigurationError` is also a `ValueError`.
+
+The `Detector` constructor raises it for the detector and `ModelConfig` cases.
+The API option cases appear when the provider loads, during the first inspection.
+The `ModelLoader` then wraps those errors in `ModelLoadError`.
 
 ```python
 from qarai_agent_guard import Detector
@@ -69,9 +79,24 @@ Raised when the model cannot be loaded:
 
 - The model identifier is unknown.
 - The provider cannot download the model.
+- An API configuration has invalid `model_options` or `inference_options`.
+- `predict` was called before `load`.
 
 ```python
 from qarai_agent_guard.core.exceptions import ModelLoadError
+```
+
+The `ModelLoader` wraps every load failure in `ModelLoadError`.
+The original message stays available as the cause:
+
+```python
+try:
+    detector.inspect(key="mem", value="hello", operation="write")
+except ModelLoadError as exc:
+    print(exc)
+    # Failed to load model 'gpt-oss-120b' using provider 'api'
+    print(exc.__cause__)
+    # Set api_key if the API endpoint requires authentication.
 ```
 
 ### ModelInferenceError
@@ -80,6 +105,38 @@ Raised when inference fails:
 
 - The provider returns no response.
 - The model call raises.
+- An API endpoint answers with a status other than `200` or `429`.
+- The network fails: refused connection, DNS error, or timeout.
+- `predict` runs before the provider loads.
+
+```python
+from qarai_agent_guard.core.exceptions import ModelInferenceError
+```
+
+### ModelRateLimitError
+
+Raised when a remote API rejects a request with status `429`.
+It extends `ModelInferenceError`, so one `except ModelInferenceError` clause
+catches both.
+
+The message contains the endpoint, the `Retry-After` value, and the response body:
+
+```text
+API rate limit reached (429) for https://openrouter.ai/api/v1/chat/completions, retry after 20: rate limit exceeded
+```
+
+```python
+from qarai_agent_guard.core.exceptions import ModelInferenceError, ModelRateLimitError
+
+try:
+    detector.inspect(key="mem", value="hello", operation="write")
+except ModelRateLimitError as exc:
+    print("throttled, retry later")
+except ModelInferenceError as exc:
+    print("provider failed:", exc)
+```
+
+Catch `ModelRateLimitError` first when you handle throttling separately.
 
 ### ModelOutputError
 
@@ -88,6 +145,36 @@ The default formatter raises it when the raw output has an unsupported shape:
 
 ```python
 from qarai_agent_guard.core.exceptions import ModelOutputError
+```
+
+An API provider raises it for a malformed response body:
+
+| Response problem | Message |
+| --- | --- |
+| The body is not JSON | `API response is not valid JSON: ...` |
+| The body is not an object | `API response must be a JSON object` |
+| `choices` is missing or empty | `API response is missing a non-empty 'choices' list` |
+| `choices[0]` is not an object | `API response 'choices[0]' must be a JSON object` |
+| `message` is missing | `API response is missing 'choices[0].message'` |
+| `content` is `null` | `API response is missing 'choices[0].message.content'` |
+
+The `ModelOutputError` from a truncated answer also carries a hint:
+
+```text
+API response is missing 'choices[0].message.content' (finish_reason='length': raise 'max_tokens' so the model can finish its answer)
+```
+
+The API output formatter raises it when the answer is not a verdict:
+
+```text
+API classifier must answer exactly 'safe' or 'unsafe', got 'maybe'
+```
+
+An API model without `output_formatter` also raises it,
+because the generic formatter cannot read a plain string:
+
+```text
+Unsupported model output. Expected bool, 0/1, a confidence score in [0, 1], or a recognized HuggingFace pipeline shape (text-classification, token-classification, or generation).
 ```
 
 ### ModelFormatterError
@@ -239,6 +326,29 @@ except ValueError as exc:
 Inside the guard, `inspect` wraps the `ValueError` in
 `DetectorExecutionError`. With `fail_open` (default) the guard allows
 the operation and keeps the error in the `errors` list.
+
+## Model provider errors inside the guard
+
+Every model provider error becomes a `DetectorExecutionError` when it happens
+inside a guard inspection.
+This includes `ModelLoadError`, `ModelInferenceError`, `ModelRateLimitError`,
+`ModelOutputError`, and `ModelFormatterError`.
+
+The message of the wrapper names the detector and keeps the original text:
+
+```text
+Detector 'api_injection' failed: API rate limit reached (429) for https://openrouter.ai/api/v1/chat/completions, retry after 20: rate limit exceeded
+```
+
+The `fail_behavior` setting decides the reaction:
+
+| `fail_behavior` | Decision | Event |
+| --- | --- | --- |
+| `fail_open` (default) | `Action.ALLOW` | `SYSTEM_FAILURE` |
+| `fail_closed` | `Action.BLOCK` | `SYSTEM_FAILURE` |
+
+The original error type is then lost.
+Catch the provider error when you call `detector.inspect` directly.
 
 ## Catching by family
 

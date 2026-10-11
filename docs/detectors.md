@@ -38,6 +38,7 @@ Give every detector a unique name when you use several detectors in one guard.
 | `detector_type` | `DetectorType` or `str` | `"regex"` | Selects the detection mode. |
 | `default_rules` | `DefaultRules` or `str` | `None` | Library-provided rule set. |
 | `model` | `ModelConfig` | `None` | Model configuration for model detection. |
+| `provider` | `ModelProviderName` or `str` | `None` | Provider whose default model is resolved from `default_rules`. |
 | `rule_strategy` | `RuleStrategy` or `str` | `"precedence"` | Resolves explicit rules and defaults. |
 | `combination_strategy` | `CombinationStrategy` or `str` | `"any"` | Combines regex and model results in mixed mode. |
 | `inference_engine` | `InferenceEngine` | Default engine | Runs model inference. |
@@ -48,15 +49,17 @@ Raises `ConfigurationError` when:
 - `default_rules` is not one of `"prompt_injection"`, `"pii"`, `"secrets"`, or `None`.
 - `combination_strategy` is not one of `"any"`, `"all"`, or `"precedence"`.
 - `rule_strategy` is not `"precedence"` or `"extend"`.
+- `provider` is not `"huggingface"`, `"api"`, or `None`.
 - `model` is given but is not a `ModelConfig`.
+- `provider` contradicts `model.provider`.
 - A regex or mixed detector has no `patterns`, no `pattern_paths`, and no `default_rules`.
-- A model or mixed detector has no `model` and no `default_rules` with a default model.
+- A model or mixed detector has no `model` and no `default_rules` with a default model for the requested provider.
 
-## Detection modes
+## Detection Modes
 
 The `detector_type` parameter selects the detection mode.
 
-### Regex mode
+### Regex Detection Mode
 
 `detector_type="regex"` evaluates regex rules only.
 This is the default mode.
@@ -68,13 +71,16 @@ detector = Detector(name="pii", default_rules="pii")
 print(detector.detector_type)  # DetectorType.REGEX
 ```
 
-### Model mode
+### Model Detection Mode
 
 `detector_type="model"` performs model inference only.
 Regex rules are not loaded.
 
 The detector needs a model configuration.
-Use `default_rules` to select a library default model:
+
+#### HuggingFace Provider
+
+For models hosted on HuggingFace, the default provider is `"huggingface"`. You can use a library default model for HuggingFace:
 
 ```python
 detector = Detector(
@@ -84,7 +90,9 @@ detector = Detector(
 )
 ```
 
-Or pass an explicit `model`:
+This uses the HuggingFace default model because the provider defaults to `"huggingface"`.
+
+You can also pass an explicit model configuration:
 
 ```python
 from qarai_agent_guard.core.models import resolve_default_model
@@ -96,9 +104,161 @@ detector = Detector(
 )
 ```
 
-See [Model-Based Detection](models.md) for the `ModelConfig` reference.
+To explicitly specify the HuggingFace provider:
 
-### Mixed mode
+```python
+detector = Detector(
+    name="hf_prompt_injection",
+    detector_type="model",
+    default_rules="prompt_injection",
+    provider="huggingface",
+)
+```
+
+#### API-Based Provider
+
+For models accessed through API endpoints, you must specify `provider="api"`. The library supports different API providers, including OpenRouter, vLLM, and Ollama.
+
+##### API Detection Behaviour (Default)
+
+The default API configuration (used with `default_rules="prompt_injection"` and `provider="api"`) expects the model to answer with exactly one word: `safe` or `unsafe`.
+
+When using an API-based model, the following default behaviour applies:
+
+| Situation | Behaviour |
+| --- | --- |
+| The value is empty text | No request. `matched=False` and no `metadata["model"]`. |
+| The model answers `unsafe` | `matched=True` with the model severity (defaults to `CRITICAL` for unsafe results). |
+| The model answers `safe` | `matched=False`. |
+| The endpoint fails | The provider exception leaves `inspect`. |
+| The answer has no usable text | `ModelOutputError` leaves `inspect`. |
+
+The guard wraps these errors in `DetectorExecutionError`. The `fail_behavior` setting then decides between `ALLOW` and `BLOCK`. See [Security Modes and Runtime Behaviour](runtime.md).
+
+##### Provider Rules
+
+Before configuring specific providers, note the following rules:
+
+- `provider` accepts `"huggingface"`, `"api"`, or `None`.
+- An unknown value raises `ConfigurationError`.
+- `provider` must match `model.provider` when both are set.
+- A mismatch raises `ConfigurationError`.
+- `provider` only selects the default model. It does not change the detection mode.
+- The `Detector` constructor has no `api_key` parameter.
+
+If you specify `default_rules="pii"` with `provider="api"` and no explicit model, this raises `ConfigurationError` because there is no API default model for the PII rule set.
+
+The API key is optional. Set it for services that require authentication, such as OpenRouter. vLLM and Ollama can use the same provider without a key when their server allows unauthenticated requests.
+
+##### OpenRouter
+
+To use OpenRouter, specify the OpenRouter endpoint, model name, and your API key. The model must answer with `safe` or `unsafe` for the default behaviour:
+
+```python
+import os
+from qarai_agent_guard.core.models import ModelConfig
+
+config = ModelConfig(
+    provider="api",
+    model="gpt-oss-120b",
+    task="text-generation",
+    threshold=0.5,
+    api_key=os.environ["OPENROUTER_API_KEY"],
+    model_options={
+        "endpoint": "https://openrouter.ai/api/v1",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a security classifier. Answer with exactly one word: safe or unsafe.",
+            }
+        ],
+    },
+    inference_options={
+        "temperature": 0.0,
+        "max_tokens": 256,
+    },
+)
+
+detector = Detector(
+    name="openrouter_prompt_injection",
+    detector_type="model",
+    model=config,
+)
+```
+
+##### vLLM
+
+To use a self-hosted vLLM server, specify the vLLM endpoint. You may not need an API key if running locally without authentication. Ensure the model follows the `safe`/`unsafe` response format:
+
+```python
+from qarai_agent_guard.core.models import ModelConfig
+
+config = ModelConfig(
+    provider="api",
+    model="meta-llama/Meta-Llama-3-8B-Instruct",
+    task="text-generation",
+    threshold=0.5,
+    model_options={
+        "endpoint": "http://localhost:8000/v1",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a security classifier. Answer with exactly one word: safe or unsafe.",
+            }
+        ],
+    },
+    inference_options={
+        "temperature": 0.0,
+        "max_tokens": 256,
+    },
+)
+
+detector = Detector(
+    name="vllm_prompt_injection",
+    detector_type="model",
+    model=config,
+)
+```
+
+##### Ollama
+
+To use Ollama, specify the Ollama OpenAI-compatible endpoint. Ollama typically does not require an API key. Ensure the model follows the `safe`/`unsafe` response format:
+
+```python
+from qarai_agent_guard.core.models import ModelConfig
+
+config = ModelConfig(
+    provider="api",
+    model="llama3.2",
+    task="text-generation",
+    threshold=0.5,
+    model_options={
+        "endpoint": "http://localhost:11434/v1",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a security classifier. Answer with exactly one word: safe or unsafe.",
+            }
+        ],
+    },
+    inference_options={
+        "temperature": 0.0,
+        "max_tokens": 256,
+    },
+)
+
+detector = Detector(
+    name="ollama_prompt_injection",
+    detector_type="model",
+    model=config,
+)
+```
+
+Model and mixed modes both work with API-based models.
+
+See [Model-Based Detection](models.md) for the `ModelConfig` reference and the full API-based provider reference.
+
+### Mixed Detection Mode
 
 `detector_type="mixed"` performs regex detection and model inference.
 The `combination_strategy` parameter combines the two results.
@@ -112,7 +272,7 @@ detector = Detector(
 )
 ```
 
-## Rule sources
+## Rule Sources
 
 A detector gets its regex rules from three sources:
 
@@ -180,7 +340,7 @@ detector = Detector(
 
 See [Detection Patterns](patterns.md) for the full rule listings.
 
-## Rule resolution
+## Rule Resolution
 
 The `rule_strategy` parameter defines how the rule sources combine.
 
@@ -245,7 +405,7 @@ ar_detector = Detector(
 
 Raises `ValueError` for an unsupported language code.
 
-## inspect
+## Inspect
 
 `inspect` checks a value for configured threats.
 
@@ -299,10 +459,13 @@ For model and mixed modes, `metadata["model"]` contains:
 
 | Key | Type | Role |
 | --- | --- | --- |
-| `provider` | `str` | The model provider. |
+| `provider` | `str` | The model provider. It is `"huggingface"` or `"api"`. |
 | `name` | `str` | The model identifier. |
 | `score` | `float` | The detection score. |
 | `severity` | `str` | The model severity. |
+
+The key `metadata["model"]` is missing when the value is empty text.
+The detector returns before it calls the model.
 
 Raises:
 
@@ -339,7 +502,7 @@ result = detector.inspect(
 print(result.matched)  # False
 ```
 
-## redact
+## Redact
 
 `redact` replaces sensitive data with markers.
 
@@ -419,7 +582,7 @@ Mixed-mode messages:
 | Regex hits only | The regex message for the rule set |
 | Model detection only | The model message |
 
-## Complete examples
+## Complete Examples
 
 Regex detector with PII rules:
 
@@ -429,7 +592,7 @@ from qarai_agent_guard import Detector
 detector = Detector(name="pii", default_rules="pii")
 ```
 
-Model detector with the default prompt-injection model:
+Model detector with the default HuggingFace prompt-injection model:
 
 ```python
 detector = Detector(
@@ -439,7 +602,7 @@ detector = Detector(
 )
 ```
 
-Mixed detector with custom patterns and a model:
+Mixed detector with custom patterns and a HuggingFace model:
 
 ```python
 from qarai_agent_guard.core.models import resolve_default_model
@@ -457,6 +620,40 @@ detector = Detector(
     ],
     model=resolve_default_model("prompt_injection"),
     combination_strategy="any",
+)
+```
+
+Model detector with a remote API model (example using OpenRouter):
+
+```python
+import os
+from qarai_agent_guard.core.models import ModelConfig
+
+config = ModelConfig(
+    provider="api",
+    model="gpt-oss-120b",
+    task="text-generation",
+    threshold=0.5,
+    api_key=os.environ["OPENROUTER_API_KEY"],
+    model_options={
+        "endpoint": "https://openrouter.ai/api/v1",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a security classifier. Answer with exactly one word: safe or unsafe.",
+            }
+        ],
+    },
+    inference_options={
+        "temperature": 0.0,
+        "max_tokens": 256,
+    },
+)
+
+detector = Detector(
+    name="api_injection",
+    detector_type="model",
+    model=config,
 )
 ```
 

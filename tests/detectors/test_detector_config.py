@@ -4,10 +4,12 @@ import pytest
 
 from qarai_agent_guard import Detector
 from qarai_agent_guard.core.exceptions import ConfigurationError
+from qarai_agent_guard.core.models.config import _format_default_api
 from qarai_agent_guard.core.schemas import (
     CombinationStrategy,
     DefaultRules,
     DetectorType,
+    ModelProviderName,
 )
 
 # Default configuration
@@ -400,6 +402,151 @@ def test_model_detector_without_default_rules_or_model_is_rejected():
     """Rejects model detectors that have no model resolution source."""
     with pytest.raises(ConfigurationError):
         Detector(detector_type="model")
+
+
+# Provider-specific default model resolution
+
+
+def test_provider_selects_the_api_default_model():
+    """Resolves the default model of the requested provider."""
+    detector = Detector(
+        detector_type="model",
+        default_rules="prompt_injection",
+        provider="api",
+    )
+
+    assert detector._provider is ModelProviderName.API
+    assert detector._model_config is not None
+    assert detector._model_config.provider is ModelProviderName.API
+    assert detector._model_config.output_formatter is _format_default_api
+
+
+def test_provider_selects_the_huggingface_default_model():
+    """Keeps the HuggingFace default when the provider is explicit."""
+    detector = Detector(
+        detector_type="model",
+        default_rules="prompt_injection",
+        provider=ModelProviderName.HUGGINGFACE,
+    )
+
+    assert detector._model_config is not None
+    assert detector._model_config.provider is ModelProviderName.HUGGINGFACE
+
+
+def test_without_provider_the_huggingface_default_model_is_resolved():
+    """Keeps resolving the HuggingFace default when no provider is given."""
+    detector = Detector(
+        detector_type="model",
+        default_rules="prompt_injection",
+    )
+
+    assert detector._provider is None
+    assert detector._model_config is not None
+    assert detector._model_config.provider is ModelProviderName.HUGGINGFACE
+
+
+def test_provider_without_default_model_is_rejected():
+    """Rejects providers that have no default model for the rule set."""
+    with pytest.raises(ConfigurationError, match="for provider 'api'"):
+        Detector(
+            detector_type="model",
+            default_rules="pii",
+            provider="api",
+        )
+
+
+@pytest.mark.parametrize("provider", ["openai", "", 1, True])
+def test_invalid_provider_is_rejected(provider):
+    """Rejects unknown provider names instead of falling back silently."""
+    with pytest.raises(ConfigurationError, match="provider must be one of"):
+        Detector(
+            detector_type="model",
+            default_rules="prompt_injection",
+            provider=provider,
+        )
+
+
+def test_provider_must_match_explicit_model_provider(model_config):
+    """Rejects a provider that contradicts the explicit model provider."""
+    with pytest.raises(ConfigurationError, match="does not match model provider"):
+        Detector(
+            detector_type="model",
+            default_rules="prompt_injection",
+            model=model_config,
+            provider="api",
+        )
+
+
+def test_matching_provider_is_accepted_with_explicit_model(model_config):
+    """Accepts a provider that matches the explicit model provider."""
+    detector = Detector(
+        detector_type="model",
+        model=model_config,
+        provider="huggingface",
+    )
+
+    assert detector._model_config is model_config
+
+
+def test_regex_detector_ignores_provider():
+    """Keeps regex detectors free from model provider state."""
+    detector = Detector(default_rules="prompt_injection", provider="api")
+
+    assert detector._provider is ModelProviderName.API
+    assert detector._model_config is None
+    assert detector._model_engine is None
+
+
+def test_api_default_model_has_no_key_by_default():
+    """Leaves credentials unset so the endpoint configuration can choose."""
+    detector = Detector(
+        detector_type="model",
+        default_rules="prompt_injection",
+        provider="api",
+    )
+
+    assert detector._model_config is not None
+    assert detector._model_config.api_key is None
+
+
+def test_explicit_api_model_is_accepted_with_matching_provider(api_model_config):
+    """Accepts a user-supplied API configuration with the matching provider."""
+    model = api_model_config()
+
+    detector = Detector(
+        detector_type="model",
+        default_rules="prompt_injection",
+        model=model,
+        provider="api",
+    )
+
+    assert detector._model_config is model
+
+
+def test_api_model_without_matching_provider_is_rejected(api_model_config):
+    """Rejects an API model configured without the matching provider."""
+    with pytest.raises(ConfigurationError, match="does not match model provider"):
+        Detector(
+            detector_type="model",
+            default_rules="prompt_injection",
+            model=api_model_config(),
+            provider="huggingface",
+        )
+
+
+def test_mixed_detector_accepts_an_api_model(api_model_config):
+    """Accepts an API model for mixed detection alongside regex rules."""
+    model = api_model_config()
+
+    detector = Detector(
+        detector_type="mixed",
+        default_rules="prompt_injection",
+        model=model,
+        provider="api",
+    )
+
+    assert detector._model_config is model
+    assert detector._rules
 
 
 # Language edge cases

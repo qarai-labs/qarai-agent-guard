@@ -5,7 +5,9 @@ It runs detectors against a value, collects detections, evaluates the policy, an
 
 This page describes the `AgentGuard` parameters and methods.
 
-## Construction
+## Creating and Configuring Agent Guard
+
+### Constructor
 
 Create a guard with the `AgentGuard` constructor:
 
@@ -35,7 +37,7 @@ Raises:
 - `ValueError` if two detectors have the same name.
 - `ValueError` if `fail_behavior`, `security_mode`, or `execution_strategy` has an invalid value.
 
-## Parameters
+### Parameters
 
 The `AgentGuard` constructor accepts these parameters:
 
@@ -59,7 +61,7 @@ guard = AgentGuard(
 )
 ```
 
-### detectors
+#### Detectors
 
 The detectors to run on each inspection.
 
@@ -95,7 +97,7 @@ guard = AgentGuard(
 )
 ```
 
-### policy
+#### Policy
 
 The policy maps detections to actions.
 The default policy blocks critical and high severity, redacts medium severity, and warns on low and info severity.
@@ -110,7 +112,7 @@ guard = AgentGuard(detectors=[detector], policy=strict_policy())
 
 See [Policies and Actions](policy.md) for all policy options.
 
-### fail_behavior
+#### Fail Behavior
 
 `fail_behavior` defines the guard reaction when a detector fails, the policy fails, or redaction fails.
 
@@ -121,7 +123,7 @@ See [Policies and Actions](policy.md) for all policy options.
 
 See [Security Modes & Runtime Behaviour](runtime.md) for details.
 
-### security_mode
+#### Security Mode
 
 `security_mode` defines how the guard applies policy decisions.
 
@@ -132,7 +134,7 @@ See [Security Modes & Runtime Behaviour](runtime.md) for details.
 
 See [Security Modes & Runtime Behaviour](runtime.md) for examples.
 
-### execution_strategy
+#### Execution Strategy
 
 `execution_strategy` defines how detectors run.
 
@@ -141,7 +143,7 @@ See [Security Modes & Runtime Behaviour](runtime.md) for examples.
 | `"exhaustive"` | The guard runs all active detectors. |
 | `"fail_fast"` | The guard stops at the first match or the first failure. |
 
-### event_callbacks
+#### Event Callbacks
 
 Functions that run for each emitted event.
 The guards calls each callback with one `SecurityEvent` argument.
@@ -158,7 +160,7 @@ guard = AgentGuard(
 
 See [Events and Callbacks](events.md) for details.
 
-## Class method: create
+### Creating a Guard from YAML (create method)
 
 `AgentGuard.create` builds a guard and optionally loads the policy from a YAML file.
 

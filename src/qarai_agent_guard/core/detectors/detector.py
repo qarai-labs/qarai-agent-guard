@@ -22,7 +22,11 @@ from qarai_agent_guard.core.schemas.detector import (
     DetectorType,
     RuleStrategy,
 )
-from qarai_agent_guard.core.schemas.models import ModelConfig, ModelDetectionResult
+from qarai_agent_guard.core.schemas.models import (
+    ModelConfig,
+    ModelDetectionResult,
+    ModelProviderName,
+)
 
 
 class Detector:
@@ -92,6 +96,17 @@ class Detector:
         An explicitly provided model takes precedence over a library default
         model resolved from ``default_rules``.
 
+    provider:
+        Optional model provider used to resolve the library default model
+        from ``default_rules``. Accepts a :class:`ModelProviderName` member or
+        its string value, for example ``"api"`` or ``"huggingface"``.
+
+        The resolved default model belongs to that provider. When ``model`` is
+        given, ``provider`` must match ``model.provider``.
+
+        Raises ``ConfigurationError`` when the provider has no default model
+        for the configured ``default_rules`` value.
+
     rule_strategy:
         Determines how explicitly provided rules and library defaults are
         resolved. Accepts a :class:`RuleStrategy` member or its string value.
@@ -139,6 +154,7 @@ class Detector:
         detector_type: DetectorType | str = DetectorType.REGEX,
         default_rules: DefaultRules | str | None = None,
         model: ModelConfig | None = None,
+        provider: ModelProviderName | str | None = None,
         rule_strategy: RuleStrategy | str = RuleStrategy.PRECEDENCE,
         combination_strategy: CombinationStrategy | str = CombinationStrategy.ANY,
         inference_engine: InferenceEngine | None = None,
@@ -170,6 +186,10 @@ class Detector:
         model:
             Optional model configuration for model-based detection.
 
+        provider:
+            Optional model provider used to resolve the library default model.
+            Accepts a :class:`ModelProviderName` member or its string value.
+
         rule_strategy:
             Strategy used to resolve explicit and default rules. Accepts a
             :class:`RuleStrategy` member or its string value.
@@ -192,13 +212,16 @@ class Detector:
             lang,
             default_rules,
             model,
+            provider,
             rule_strategy,
         )
 
         self._language = normalize_language(lang)
         self._combination_strategy = CombinationStrategy(combination_strategy)
         if self.detector_type in (DetectorType.MODEL, DetectorType.MIXED):
-            self._model_config = model or resolve_default_model(self.default_rules)
+            self._model_config = model or resolve_default_model(
+                self.default_rules, self._provider
+            )
         else:
             self._model_config = None
 
@@ -209,6 +232,11 @@ class Detector:
             raise ConfigurationError(
                 "model detection requires ModelConfig or a default_rules "
                 "value with a library default model"
+                + (
+                    f" for provider '{self._provider.value}'"
+                    if self._provider is not None
+                    else ""
+                )
             )
 
         if (
@@ -458,6 +486,7 @@ class Detector:
         lang: str,
         default_rules: DefaultRules | str | None,
         model: ModelConfig | None,
+        provider: ModelProviderName | str | None,
         rule_strategy: str,
     ) -> None:
         """
@@ -473,6 +502,9 @@ class Detector:
 
         model:
             Optional model configuration.
+
+        provider:
+            Optional model provider used to resolve the default model.
 
         rule_strategy:
             Rule resolution strategy. Accepts a :class:`RuleStrategy` member
@@ -515,6 +547,22 @@ class Detector:
 
         if model is not None and not isinstance(model, ModelConfig):
             raise ConfigurationError("model must be a ModelConfig or None")
+
+        if provider is None:
+            self._provider: ModelProviderName | None = None
+        else:
+            try:
+                self._provider = ModelProviderName(provider)
+            except (TypeError, ValueError) as exc:
+                valid = ", ".join(f"'{p.value}'" for p in ModelProviderName)
+                raise ConfigurationError(f"provider must be one of: {valid}") from exc
+
+        if model is not None and self._provider is not None:
+            if model.provider is not self._provider:
+                raise ConfigurationError(
+                    f"provider '{self._provider.value}' does not match "
+                    f"model provider '{model.provider.value}'"
+                )
 
     def _load_default_rules(
         self,
