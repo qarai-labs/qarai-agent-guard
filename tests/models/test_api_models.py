@@ -720,12 +720,14 @@ def test_loader_loads_caches_and_releases_the_api_provider(
         loader.clear()
 
 
-def test_loader_wraps_api_load_failures(
+def test_loader_loads_api_provider_without_a_key(
     api_config, api_verdict_response, patched_api_client
 ):
     loader = ModelLoader()
     try:
-        with patched_api_client(api_verdict_response()), pytest.raises(ModelLoadError):
-            loader.get(api_config(api_key=None))
+        with patched_api_client(api_verdict_response()) as (mock_client, _instance):
+            provider = loader.get(api_config(api_key=None))
+            assert isinstance(provider, APIProvider)
+            assert mock_client.call_count == 1
     finally:
         loader.clear()
