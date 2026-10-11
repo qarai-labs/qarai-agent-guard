@@ -50,7 +50,7 @@ Raised when configuration is invalid:
 - The detector `provider` does not match `model.provider`.
 - The requested provider has no default model for the rule set.
 - An API `model_options` or `inference_options` value is invalid.
-- An API configuration has no `api_key`.
+- An API configuration has invalid connection or request options.
 
 `ConfigurationError` is also a `ValueError`.
 
@@ -79,7 +79,7 @@ Raised when the model cannot be loaded:
 
 - The model identifier is unknown.
 - The provider cannot download the model.
-- An API configuration is invalid: no `api_key`, or invalid `model_options` or `inference_options`.
+- An API configuration has invalid `model_options` or `inference_options`.
 - `predict` was called before `load`.
 
 ```python
@@ -96,7 +96,7 @@ except ModelLoadError as exc:
     print(exc)
     # Failed to load model 'gpt-oss-120b' using provider 'api'
     print(exc.__cause__)
-    # api_key is required for API provider
+    # Set api_key if the API endpoint requires authentication.
 ```
 
 ### ModelInferenceError

@@ -148,7 +148,7 @@ Before configuring specific providers, note the following rules:
 
 If you specify `default_rules="pii"` with `provider="api"` and no explicit model, this raises `ConfigurationError` because there is no API default model for the PII rule set.
 
-If you build an API detector from defaults without adding an API key, the first inspection raises `ModelLoadError`. The cause is `api_key is required for API provider`.
+The API key is optional. Set it for services that require authentication, such as OpenRouter. vLLM and Ollama can use the same provider without a key when their server allows unauthenticated requests.
 
 ##### OpenRouter
 
@@ -198,7 +198,6 @@ config = ModelConfig(
     model="meta-llama/Meta-Llama-3-8B-Instruct",
     task="text-generation",
     threshold=0.5,
-    api_key="",  # Set empty string if no auth is required
     model_options={
         "endpoint": "http://localhost:8000/v1",
         "messages": [
@@ -233,7 +232,6 @@ config = ModelConfig(
     model="llama3.2",
     task="text-generation",
     threshold=0.5,
-    api_key="",  # Ollama typically does not require API key
     model_options={
         "endpoint": "http://localhost:11434/v1",
         "messages": [

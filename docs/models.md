@@ -29,7 +29,7 @@ config = ModelConfig(
 | `task` | `ModelTask` or `str` | `"text-classification"` | The task type that selects the model class. |
 | `threshold` | `float` | `0.5` | Confidence threshold in `[0, 1]`. |
 | `hf_access_token` | `str` | `None` | HuggingFace access token for private models. |
-| `api_key` | `str` | `None` | API key for `provider="api"`. The API provider requires a non-empty value. |
+| `api_key` | `str` | `None` | Optional API key for authenticated endpoints. |
 | `output_formatter` | `Callable` | `None` | Converts raw model output to a result. Required for API models. |
 | `model_options` | `dict` | `None` | Arguments for `AutoModel*.from_pretrained()`, or the connection options of an API provider. |
 | `tokenizer_options` | `dict` | `None` | Arguments for `AutoTokenizer.from_pretrained()`. |
@@ -99,7 +99,7 @@ The API default values in full:
 | `model` | `"gpt-oss-120b"` |
 | `task` | `"text-generation"` |
 | `threshold` | `0.5` |
-| `api_key` | `None`. You must set it. |
+| `api_key` | `None`. Set it when the endpoint requires authentication. |
 | `model_options["endpoint"]` | `"https://openrouter.ai/api/v1"` |
 | `model_options["messages"]` | One `system` message with the classifier instructions. |
 | `inference_options` | `{"temperature": 0.0, "max_tokens": 256}` |
@@ -158,7 +158,7 @@ detector = Detector(
 
 The default prompt-injection model is `deepset/deberta-v3-base-injection` (HuggingFace). The default PII model is `SoelMgd/bert-pii-detection` (HuggingFace).
 
-A detector that asks for `provider="api"` without a key resolves the API default. The error then comes from the provider at the first inspection. See [API-Based Providers](#api-based-providers).
+The API default uses OpenRouter. Add an API key before inspection when using that default. A keyless API server can use the same provider with its own endpoint and model. See [API-Based Providers](#api-based-providers).
 
 An explicit `model` takes precedence over a default model:
 
@@ -292,19 +292,22 @@ detector = Detector(
 Read the key from the environment or from a secret manager.
 Do not write the key in the source code.
 
-`provider="api"` alone is not enough.
-The default API configuration has no `api_key`.
-The provider raises an error on the first inspection:
+`provider="api"` uses the default OpenRouter endpoint and model.
+Set `api_key` for OpenRouter. For a keyless local endpoint, replace the endpoint
+and model settings with the values for your vLLM or Ollama server.
 
 ```python
-detector = Detector(
-    name="api_prompt_injection",
-    detector_type="model",
-    default_rules="prompt_injection",
-    provider="api",
+import os
+from dataclasses import replace
+
+from qarai_agent_guard import Detector
+from qarai_agent_guard.core.models import resolve_default_model
+
+model = replace(
+    resolve_default_model("prompt_injection", provider="api"),
+    api_key=os.environ["OPENROUTER_API_KEY"],
 )
-# First inspect() raises:
-# ModelLoadError: Failed to load model 'gpt-oss-120b' using provider 'api'
+detector = Detector(name="api_prompt_injection", detector_type="model", model=model)
 ```
 
 The `Detector` constructor has no `api_key` parameter.
@@ -403,11 +406,13 @@ Rules for `headers`:
 - Each name must be a non-empty string.
 - Each value must be a string.
 
-The library merges `headers` after `Authorization` and `Content-Type`.
-A header in `headers` can therefore replace one of these two headers.
+The library sends `Content-Type: application/json` and adds `Authorization`
+when `api_key` is not blank. Custom headers are also sent. A custom
+`Content-Type` can replace the default. When `api_key` is set, it controls the
+`Authorization` header.
 
-Do not put the API key in `headers`.
-The library already sends the key in the `Authorization` header.
+Set the API key with `api_key`. The provider adds it to the `Authorization`
+header. Use `headers` for other service-specific headers.
 
 #### timeout
 
@@ -488,7 +493,6 @@ config = ModelConfig(
     model="meta-llama/Meta-Llama-3-8B-Instruct",
     task="text-generation",
     threshold=0.5,
-    api_key="",  # Set empty if no authentication is required
     model_options={
         "endpoint": "http://localhost:8000/v1",
         "messages": [
@@ -516,7 +520,6 @@ config = ModelConfig(
     model="llama3.2",
     task="text-generation",
     threshold=0.5,
-    api_key="",  # Ollama does not require an API key
     model_options={
         "endpoint": "http://localhost:11434/v1",
         "messages": [
@@ -542,7 +545,7 @@ The provider sends one `POST` request per value.
 | --- | --- |
 | Method | `POST` |
 | URL | `<endpoint>/chat/completions` |
-| `Authorization` | `Bearer <api_key>` |
+| `Authorization` | `Bearer <api_key>` when a key is set; otherwise omitted |
 | `Content-Type` | `application/json` |
 | Body | JSON object |
 
@@ -572,7 +575,7 @@ The provider maps every failure to one exception type:
 
 | Situation | Exception | Message |
 | --- | --- | --- |
-| `api_key` is empty or missing | `ConfigurationError` on load | `api_key is required for API provider` |
+| `api_key` is not a string or `None` | `ConfigurationError` on load | `api_key must be a string or None` |
 | `model_options` or `inference_options` is invalid | `ConfigurationError` on load | Lists the rejected value. |
 | Status `429` | `ModelRateLimitError` | `API rate limit reached (429) for <endpoint>, retry after <value>: <body>` |
 | Any other status `4xx` or `5xx` | `ModelInferenceError` | `API request failed with status <code>: <body>` |
@@ -601,7 +604,7 @@ try:
     detector.inspect(key="mem", value="hello", operation="write")
 except ModelLoadError as exc:
     print(exc.__cause__)
-    # api_key is required for API provider
+    # The original configuration error is shown here.
 ```
 
 #### Truncated answers
@@ -678,9 +681,9 @@ The table lists what the library does when you configure nothing:
 
 | Item | Default behaviour |
 | --- | --- |
-| `api_key` | None. An empty or missing key raises `ConfigurationError`. |
+| `api_key` | None. Authentication header is omitted for a missing or blank key. |
 | `endpoint` suffix | The library appends `/chat/completions`. |
-| Authentication | The library sends `Authorization: Bearer <api_key>`. |
+| Authentication | The library sends `Authorization: Bearer <api_key>` only when a key is set. |
 | Content type | The library sends `Content-Type: application/json`. |
 | Inspected value | The library appends it as the last `user` message. |
 | `headers` | Empty. No extra header is sent. |
@@ -744,7 +747,6 @@ See [Security Modes & Runtime Behaviour](runtime.md) for the guard reaction.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `api_key is required for API provider` | The configuration has no key. | Add the key with `dataclasses.replace`. |
 | `model_options is missing required key(s): endpoint, messages` | The bag is incomplete. | Add both keys. |
 | `unknown model_options key(s): ...` | A key is misspelled or belongs to a HuggingFace model. | Use only `endpoint`, `messages`, `headers`, `timeout`. |
 | `endpoint must be the base URL without the '/chat/completions' suffix` | The full URL was configured. | Remove the suffix. |

@@ -497,8 +497,8 @@ def test_regex_detector_ignores_provider():
     assert detector._model_engine is None
 
 
-def test_api_default_model_requires_an_api_key():
-    """Leaves the resolved API default without credentials."""
+def test_api_default_model_has_no_key_by_default():
+    """Leaves credentials unset so the endpoint configuration can choose."""
     detector = Detector(
         detector_type="model",
         default_rules="prompt_injection",

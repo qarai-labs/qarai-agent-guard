@@ -68,8 +68,8 @@ class APIProvider(ModelProvider):
             )
 
         api_key = self.config.api_key
-        if not isinstance(api_key, str) or not api_key.strip():
-            raise ConfigurationError("api_key is required for API provider")
+        if api_key is not None and not isinstance(api_key, str):
+            raise ConfigurationError("api_key must be a string or None")
 
         model_options = validate_api_model_options(self.config.model_options)
         self._inference_options = validate_api_inference_options(
@@ -80,7 +80,7 @@ class APIProvider(ModelProvider):
         self._messages = model_options["messages"]
         self._headers = model_options.get("headers", {})
         self._timeout = model_options.get("timeout", DEFAULT_TIMEOUT)
-        self._api_key = api_key.strip()
+        self._api_key = api_key.strip() if api_key else ""
         self._model = self.config.model
         self._client = httpx.Client(timeout=self._timeout)
         self._loaded = True
@@ -97,11 +97,9 @@ class APIProvider(ModelProvider):
             "messages": [*self._messages, {"role": "user", "content": text}],
             **self._inference_options,
         }
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-            **self._headers,
-        }
+        headers = {"Content-Type": "application/json", **self._headers}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
 
         try:
             response = self._client.post(

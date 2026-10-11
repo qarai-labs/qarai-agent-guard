@@ -39,16 +39,11 @@ def test_api_provider_requires_api_provider():
         APIProvider(config).load()
 
 
-def test_api_provider_missing_api_key_fails(api_config):
-    provider = APIProvider(api_config(api_key=None))
-    with pytest.raises(ConfigurationError, match="api_key"):
-        provider.load()
-
-
-def test_api_provider_blank_api_key_fails(api_config):
-    provider = APIProvider(api_config(api_key="   "))
-    with pytest.raises(ConfigurationError, match="api_key"):
-        provider.load()
+@pytest.mark.parametrize("api_key", [None, "", "   "])
+def test_api_provider_accepts_missing_or_blank_api_key(api_config, api_key):
+    provider = APIProvider(api_config(api_key=api_key))
+    provider.load()
+    assert provider._api_key == ""
 
 
 @pytest.mark.parametrize(
@@ -305,6 +300,19 @@ def test_api_provider_sends_expected_url_auth_and_model(
         "role": "user",
         "content": "hello",
     }
+
+
+def test_api_provider_omits_auth_header_without_key(
+    api_config, api_verdict_response, patched_api_client, recorded_request
+):
+    with patched_api_client(api_verdict_response()) as (_, instance):
+        provider = APIProvider(api_config(api_key=None))
+        provider.load()
+        provider.predict("hello")
+
+    headers = recorded_request(instance).headers
+    assert "Authorization" not in headers
+    assert headers["Content-Type"] == "application/json"
 
 
 def test_api_provider_sends_custom_headers(
